@@ -11,18 +11,23 @@ pub(super) fn clamp01(v: &str) -> String {
     format!("min(1,max(0,{v}))")
 }
 
-/// Fast start, soft landing.
+/// How hard the easing snaps: the higher, the more of the move happens in the first moments, then it holds.
+const SNAP: u32 = 4;
+
+/// Fast start, soft landing: a tick, then a tock.
 pub fn ease_out(p: &str) -> String {
-    format!("(1-pow(1-({p}),3))")
+    format!("(1-pow(1-({p}),{SNAP}))")
 }
 
 /// Slow start, fast exit.
 pub(super) fn ease_in(p: &str) -> String {
-    format!("pow({p},3)")
+    format!("pow({p},{SNAP})")
 }
 
 const PUNCH_SECS: f64 = 0.6; // how long a punch-in or punch-out takes
 const BEAT_HZ: f32 = 2.5; // pulses per second of the Beat zoom
+const SLAM_DAMP: f32 = 7.0; // how fast the slam settles
+const SLAM_HZ: f32 = 16.0; // radians per second of its springing
 const SPIN_RADIANS: f32 = -4.712_389; // three quarters of a turn, counter-clockwise
 
 impl Item {
@@ -55,6 +60,10 @@ impl Item {
             ZoomEffect::None => ((z - 1.0).abs() > 1e-3).then(|| format!("{z:.4}")),
             ZoomEffect::In => Some(format!("{z:.4}*(1+{a:.3}*{})", ease_out(&punch))),
             ZoomEffect::Out => Some(format!("{z:.4}*(1+{a:.3}*(1-{}))", ease_out(&punch))),
+            // A damped spring: shoots past the target, then settles.
+            ZoomEffect::Slam => Some(format!(
+                "{z:.4}*(1+{a:.3}*(1-exp(-{SLAM_DAMP}*{now})*cos({SLAM_HZ}*{now})))"
+            )),
             ZoomEffect::Pulse => Some(format!("{z:.4}*(1+{a:.3}*0.5*(1-cos(2*PI*{BEAT_HZ}*{now})))")),
         };
         let enter = self.enter();

@@ -72,6 +72,8 @@ fn shortcuts(ctx: &Context, app: &mut App) {
         app.save_as();
     } else if pressed(Modifiers::COMMAND, Key::S) {
         app.save();
+    } else if pressed(Modifiers::COMMAND, Key::N) {
+        app.new_project();
     } else if pressed(Modifiers::COMMAND, Key::O) {
         app.open();
     } else if pressed(Modifiers::COMMAND, Key::Plus) || pressed(Modifiers::COMMAND, Key::Equals) {
@@ -139,6 +141,7 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
     app.tick();
     let ctx = ui.ctx().clone();
     shortcuts(&ctx, app);
+    app.confirm_new_dialog(&ctx);
     if app.fullscreen {
         return fullscreen::show(ui, app);
     }

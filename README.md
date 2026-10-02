@@ -31,7 +31,7 @@ cargo run --release -- clip.mp4 other.mov            # with files
 cargo run --release -- project.gcut                  # with a project
 ```
 
-Keys: `Space` play/pause, `S` split, `Delete` remove, `Cmd+Z` undo, `Shift+Cmd+Z` redo, `Cmd+C` `Cmd+X` `Cmd+V` copy, cut, paste, `F` full screen preview, `Cmd+S` save, `Cmd+O` open, `Cmd+plus` `Cmd+minus` zoom the tracks, `Cmd+0` fit, `Alt` while dragging to skip snapping. Pinch or Cmd+scroll zooms the tracks; the mouse wheel over the preview resizes the selected element; drag the bar on top of the timeline to make it taller.
+Keys: `Space` play/pause, `S` split, `Delete` remove, `Cmd+Z` undo, `Shift+Cmd+Z` redo, `Cmd+C` `Cmd+X` `Cmd+V` copy, cut, paste, `F` full screen preview, `Cmd+N` new project (asks first if there is unsaved work), `Cmd+S` save, `Cmd+O` open, `Cmd+plus` `Cmd+minus` zoom the tracks, `Cmd+0` fit, `Alt` while dragging to skip snapping. Pinch or Cmd+scroll zooms the tracks; the mouse wheel over the preview resizes the selected element; drag the bar on top of the timeline to make it taller.
 
 ## Develop
 

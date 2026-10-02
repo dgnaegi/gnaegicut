@@ -5,6 +5,8 @@ use super::item_motion::{clamp01, ease_out};
 use super::{Item, Transition};
 
 const WHIP_BLUR: f32 = 0.026; // horizontal blur radius as a fraction of the frame width
+const WIPE_BLUR: f32 = 0.02; // the same for the streak of a wipe,
+const WIPE_FAST: f64 = 0.4; // which only shows during the fast first part of its length
 
 impl Item {
     /// Filters between the box scale and the mask / rotation: the look first, then transition effects.
@@ -43,6 +45,17 @@ impl Item {
                 effect if effect.blurs() => {
                     let sigma = frame_w as f32 * WHIP_BLUR;
                     f.push(format!("gblur=sigma={sigma:.1}:sigmaV=0.01:enable='{window}'"));
+                }
+                effect if effect.is_reveal() && entering => {
+                    // A speed streak along the wipe, only while it is still racing across.
+                    let streak = frame_w as f32 * WIPE_BLUR;
+                    let (sx, sy) = match effect {
+                        Transition::WipeLeft | Transition::WipeRight => (streak, 0.01),
+                        Transition::WipeUp | Transition::WipeDown => (0.01, streak),
+                        _ => continue,
+                    };
+                    let fast = format!("lt({now},{:.3})", len * WIPE_FAST);
+                    f.push(format!("gblur=sigma={sx:.1}:sigmaV={sy:.1}:enable='{fast}'"));
                 }
                 _ => {}
             }

@@ -32,6 +32,9 @@ pub fn show(ui: &mut Ui, app: &mut App) {
         ui.label(RichText::new("GNAEGICUT").font(black(22.0)));
         ui.add_space(24.0);
 
+        if button(ui, "New", Kind::Plain).clicked() {
+            app.new_project();
+        }
         if button(ui, "Open", Kind::Plain).clicked() {
             app.open();
         }

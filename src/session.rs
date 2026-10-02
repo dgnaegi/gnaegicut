@@ -32,6 +32,7 @@ impl App {
     fn save_to(&mut self, path: PathBuf) {
         match persist::save(&self.project, &path) {
             Ok(()) => {
+                self.unsaved.file_fp = self.project.fingerprint();
                 self.status = format!("Saved {}", path.display());
                 self.set_file(Some(path));
             }
@@ -61,12 +62,13 @@ impl App {
         }
     }
 
-    fn adopt(&mut self, project: Project, file: Option<PathBuf>) {
+    pub(crate) fn adopt(&mut self, project: Project, file: Option<PathBuf>) {
         self.stop();
         let mut project = project;
         project.sync_media();
         self.captions_fp = Some(project.timing_fingerprint());
         self.saved_fp = project.fingerprint();
+        self.unsaved.file_fp = self.saved_fp;
         self.pending_text = project.items().any(|i| i.kind == Kind::Text);
         let missing = persist::missing_media(&project);
         self.project = project;
@@ -128,6 +130,7 @@ impl App {
 
         if self.pending_text && self.fonts.is_some() {
             self.pending_text = false;
+            let clean = !self.has_unsaved_work();
             let ids: Vec<_> = self
                 .project
                 .items()
@@ -136,6 +139,9 @@ impl App {
                 .collect();
             ids.into_iter().for_each(|id| self.refresh_text(id)); // the saved PNGs live in temp and may be gone
             self.history.reset(&self.project); // re-rendering is not something to undo
+            if clean {
+                self.unsaved.file_fp = self.project.fingerprint(); // nor is it an unsaved change
+            }
         }
         if self.resume {
             let dragging = self.ctx.input(|i| i.pointer.any_down());

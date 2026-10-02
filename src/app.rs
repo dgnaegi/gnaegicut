@@ -50,11 +50,11 @@ pub struct App {
     pub ctx: Context,
     pub tx: Sender<Event>,
     rx: Receiver<Event>,
-    // Session: where the project lives and what has happened to it since.
-    pub current_file: Option<PathBuf>,
+    pub current_file: Option<PathBuf>, // the session: where the project lives, what happened since
     pub captions_fp: Option<u64>,
     pub(crate) edits: Settle,
     pub(crate) saved_fp: u64,
+    pub(crate) unsaved: crate::new_project::Unsaved,
     pub(crate) resume: bool,
     pub(crate) pending_text: bool,
 }
@@ -101,6 +101,7 @@ impl App {
             captions_fp: None,
             edits: Settle::new(0),
             saved_fp: 0,
+            unsaved: Default::default(),
             resume: false,
             pending_text: false,
         }

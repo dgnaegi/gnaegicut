@@ -22,27 +22,6 @@ impl Kind {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
-pub enum ZoomEffect {
-    None,
-    In,
-    Out,
-    Pulse,
-}
-
-impl ZoomEffect {
-    pub const ALL: [ZoomEffect; 4] = [ZoomEffect::None, ZoomEffect::In, ZoomEffect::Out, ZoomEffect::Pulse];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            ZoomEffect::None => "None",
-            ZoomEffect::In => "Punch in",
-            ZoomEffect::Out => "Punch out",
-            ZoomEffect::Pulse => "Beat",
-        }
-    }
-}
-
 /// What happens to an item while it enters or leaves. Fade, Slide, Flash and Glitch work for both; the rest only
 /// bring an item in (they come from transitions between two clips).
 #[derive(Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]

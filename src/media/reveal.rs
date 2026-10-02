@@ -1,7 +1,7 @@
 //! Masks for wipe and circle transitions: a grey video that is white where the item is already revealed.
 //! The mask is only animated for the first part of the item; after that it is plain white.
 
-use crate::project::{Item, Kind, Transition};
+use crate::project::{Item, Kind, Transition, ease_out};
 
 /// Filter statements that produce the item's reveal mask as `[m{i}]`, sized to the item's box.
 pub fn mask(i: usize, item: &Item, (bw, bh): (u32, u32)) -> Option<String> {
@@ -10,7 +10,7 @@ pub fn mask(i: usize, item: &Item, (bw, bh): (u32, u32)) -> Option<String> {
     if head <= 0.03 {
         return None;
     }
-    let p = format!("(1-pow(1-clip((T+{:.3})/{:.3},0,1),3))", item.cut, phase.len); // eased: fast start, soft landing
+    let p = ease_out(&format!("clip((T+{:.3})/{:.3},0,1)", item.cut, phase.len));
     let lum = match phase.effect {
         Transition::WipeRight => format!("255*lt(X,W*{p})"),
         Transition::WipeLeft => format!("255*gt(X,W*(1-{p}))"),

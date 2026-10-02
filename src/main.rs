@@ -9,6 +9,7 @@ mod fonts;
 mod history;
 mod logo;
 mod media;
+mod new_project;
 mod patterns;
 mod persist;
 mod player;

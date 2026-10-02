@@ -24,15 +24,18 @@ mod tests_join;
 mod tests_music;
 #[cfg(test)]
 mod tests_place;
+mod zoom_effect;
 
 pub use aspect::Aspect;
 pub use caption::{Caption, CaptionLayout, CaptionStyle};
 pub use item::Item;
+pub use item_motion::ease_out;
 pub use join_effects::{Join, JoinEffect};
-pub use kinds::{Kind, Look, Transition, ZoomEffect};
+pub use kinds::{Kind, Look, Transition};
 pub use media::MediaRef;
 use serde::{Deserialize, Serialize};
 use std::hash::{DefaultHasher, Hash, Hasher};
+pub use zoom_effect::ZoomEffect;
 
 /// A layer. Higher tracks draw on top of lower ones.
 #[derive(Clone, Default, Serialize, Deserialize)]

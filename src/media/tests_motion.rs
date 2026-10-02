@@ -49,7 +49,7 @@ fn slide_left_enters_from_the_right_and_exits_to_the_left() {
         near(at(&p, 0.02, 0.5, 0.5), BLACK),
         "starts fully off-screen to the right"
     );
-    // Eased: at the halfway mark the image is 87.5% in, so only a thin strip on the left is still empty.
+    // Eased: at the halfway mark the image is 93.75% in, so only a thin strip on the left is still empty.
     assert!(
         near(at(&p, 0.5, 0.5, 0.5), RED) && near(at(&p, 0.5, 0.05, 0.5), BLACK),
         "mostly in halfway"
@@ -60,7 +60,7 @@ fn slide_left_enters_from_the_right_and_exits_to_the_left() {
     );
     assert!(
         near(at(&p, 2.5, 0.25, 0.5), RED) && near(at(&p, 2.5, 0.95, 0.5), BLACK),
-        "leaving eases in: only 12.5% gone halfway"
+        "leaving eases in: only 6.25% gone halfway"
     );
 }
 
@@ -70,7 +70,7 @@ fn slide_down_moves_vertically() {
     // Moving down: it enters from the top edge, so at the halfway point the upper half is covered.
     assert!(
         near(at(&p, 0.5, 0.5, 0.5), RED) && near(at(&p, 0.5, 0.5, 0.95), BLACK),
-        "87.5% in halfway"
+        "93.75% in halfway"
     );
 }
 
@@ -114,4 +114,22 @@ fn exports_transitions_and_rotation_together() {
     let got = probe(&out).unwrap();
     assert_eq!((got.src_w, got.src_h), (1080, 1350));
     assert!((got.src_len - 3.0).abs() < 0.3);
+}
+
+#[test]
+fn slam_in_overshoots_the_zoom_amount_before_settling() {
+    let mut item = Item::new(
+        "/x.mp4".into(),
+        "x".into(),
+        crate::project::Kind::Video,
+        (160, 90),
+        5.0,
+        false,
+    );
+    (item.effect, item.amount) = (crate::project::ZoomEffect::Slam, 0.5);
+    let expr = item.zoom_expr().unwrap();
+    assert!(
+        expr.contains("exp(") && expr.contains("cos("),
+        "a damped spring: {expr}"
+    );
 }

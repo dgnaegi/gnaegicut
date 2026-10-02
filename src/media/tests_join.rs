@@ -39,7 +39,7 @@ fn dissolve_blends_the_two_clips() {
 fn wipe_right_reveals_the_next_clip_from_the_left() {
     let p = joined(JoinEffect::WipeRight, 1.0);
     assert!(near(at(&p, 1.0, 0.5, 0.5), RED), "before the transition");
-    // Halfway in time is 87.5% revealed: the movement eases out (fast start, soft landing).
+    // Halfway in time is 93.75% revealed: the movement eases out (fast start, soft landing).
     assert!(
         near(at(&p, 2.5, 0.25, 0.5), BLUE) && near(at(&p, 2.5, 0.95, 0.5), RED),
         "mostly revealed halfway"
@@ -59,14 +59,14 @@ fn wipe_down_reveals_from_the_top() {
     let p = joined(JoinEffect::WipeDown, 1.0);
     assert!(
         near(at(&p, 2.5, 0.5, 0.25), BLUE) && near(at(&p, 2.5, 0.5, 0.95), RED),
-        "87.5% revealed halfway"
+        "93.75% revealed halfway"
     );
 }
 
 #[test]
 fn push_left_slides_the_old_clip_out_and_the_new_one_in() {
     let p = joined(JoinEffect::PushLeft, 1.0);
-    // Eased: the new clip is 87.5% in at the halfway mark and covers the old one, which is only 12.5% out.
+    // Eased: the new clip is 93.75% in at the halfway mark and covers the old one, which is only 6.25% out.
     assert!(
         near(at(&p, 2.5, 0.05, 0.5), RED) && near(at(&p, 2.5, 0.5, 0.5), BLUE),
         "the new clip has taken most of the frame"
