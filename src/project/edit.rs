@@ -1,0 +1,153 @@
+//! Operations that restructure the timeline.
+
+use super::{Caption, Item, Kind, Project, Track};
+
+const MIN_LEN: f64 = 0.1; // an item never gets shorter than this
+
+impl Project {
+    /// Splits the item at timeline time `t`. Returns the id of the right-hand piece, or None
+    /// if `t` is outside the item or too close to an edge.
+    pub fn split(&mut self, id: u64, t: f64) -> Option<u64> {
+        let (ti, ii) = self.find(id)?;
+        let item = &self.tracks[ti].items[ii];
+        let local = t - item.at;
+        if local < 0.1 || local > item.len() - 0.1 {
+            return None;
+        }
+        let mut right = item.clone();
+        right.at = t;
+        // A reversed clip plays its source backwards, so the part that comes first is the one at the source's end.
+        let cut = if item.reversed {
+            item.end - local
+        } else {
+            item.start + local
+        };
+        if item.reversed {
+            right.end = cut;
+            self.tracks[ti].items[ii].start = cut;
+        } else {
+            right.start = cut;
+            self.tracks[ti].items[ii].end = cut;
+        }
+        right.id = self.next_id;
+        self.next_id += 1;
+        let new_id = right.id;
+        self.tracks[ti].items.insert(ii + 1, right);
+        Some(new_id)
+    }
+
+    /// Drags the left (`front`) or right edge of an item to timeline time `t`. Video and sound can grow back
+    /// out to the ends of their source, which brings a previously cut-off part back; the other edge stays put.
+    pub fn trim_edge(&mut self, id: u64, front: bool, t: f64) {
+        let Some(item) = self.get_mut(id) else { return };
+        let limited = matches!(item.kind, Kind::Video | Kind::Audio);
+        if front {
+            if !limited {
+                return;
+            }
+            let delta = (t - item.at).clamp(-item.start.min(item.at), item.len() - MIN_LEN);
+            item.start += delta;
+            item.at += delta;
+        } else {
+            let most = if limited { item.src_len } else { f64::MAX };
+            item.end = (t - item.at + item.start).clamp(item.start + MIN_LEN, most.max(item.start + MIN_LEN));
+        }
+    }
+
+    /// Removes a track if it is empty and not the last one. Returns whether it was removed.
+    pub fn remove_empty_track(&mut self, index: usize) -> bool {
+        let removable = self.tracks.len() > 1 && self.tracks.get(index).is_some_and(|t| t.items.is_empty());
+        if removable {
+            self.tracks.remove(index);
+        }
+        removable
+    }
+
+    /// When the last picture ends, which is usually where the music should end too.
+    pub fn visual_end(&self) -> f64 {
+        self.items()
+            .filter(|i| i.kind.is_visual())
+            .fold(0.0, |end, i| end.max(i.end_at()))
+    }
+
+    /// Cuts a sound where the picture ends and fades it out over `fade` seconds. A sound that is already
+    /// shorter keeps its length and just fades at its own end. Returns false if it starts after the picture ends.
+    pub fn fade_out_at_end(&mut self, id: u64, fade: f32) -> bool {
+        let end = self.visual_end();
+        let Some(item) = self.get_mut(id) else { return false };
+        if item.at + 0.2 >= end {
+            return false;
+        }
+        item.end = (item.start + (end - item.at)).clamp(item.start + 0.2, item.src_len.max(item.start + 0.2));
+        item.fade_out = fade.min(item.len() as f32).max(0.0);
+        true
+    }
+
+    /// Moves an item to `track` at timeline position `at` (clamped to >= 0).
+    pub fn place(&mut self, id: u64, track: usize, at: f64) {
+        let Some((ti, ii)) = self.find(id) else { return };
+        let mut item = self.tracks[ti].items.remove(ii);
+        item.at = at.max(0.0);
+        let track = track.min(self.tracks.len() - 1);
+        self.tracks[track].items.push(item);
+        self.tracks[track].items.sort_by(|a, b| a.at.total_cmp(&b.at));
+    }
+
+    /// Removes an item and pulls everything after it on the same track left, closing the gap.
+    pub fn ripple_remove(&mut self, id: u64) {
+        let Some((ti, _)) = self.find(id) else { return };
+        let Some((at, len)) = self.get(id).map(|i| (i.at, i.len())) else {
+            return;
+        };
+        self.remove(id);
+        for item in self.tracks[ti].items.iter_mut().filter(|i| i.at >= at) {
+            item.at = (item.at - len).max(0.0);
+        }
+    }
+
+    /// The part of the edit that plays from timeline time `t` onwards, re-based so it starts at 0.
+    pub fn tail_from(&self, t: f64) -> Project {
+        // Joins are resolved on the whole edit first: the overlap must be measured before the front is cut off.
+        let mut rest = if self.linked { self.clone() } else { self.resolved() };
+        for track in &mut rest.tracks {
+            *track = Track {
+                items: track
+                    .items
+                    .iter()
+                    .filter(|i| i.end_at() > t + 0.05)
+                    .map(|i| cut_front(i, t))
+                    .collect(),
+            };
+        }
+        rest.captions = self
+            .captions
+            .iter()
+            .filter(|c| c.end > t)
+            .map(|c| Caption {
+                start: (c.start - t).max(0.0),
+                end: c.end - t,
+                text: c.text.clone(),
+            })
+            .collect();
+        rest
+    }
+
+    /// The topmost item playing at `t` for which `hit` is true.
+    pub fn topmost_at(&self, t: f64, hit: impl Fn(&Item) -> bool) -> Option<u64> {
+        let playing = |i: &&Item| i.at <= t && t < i.end_at();
+        self.items().filter(playing).filter(|i| hit(i)).last().map(|i| i.id)
+    }
+}
+
+fn cut_front(item: &Item, t: f64) -> Item {
+    let mut i = item.clone();
+    if i.at < t {
+        let cut = t - i.at;
+        i.start += cut;
+        i.cut += cut;
+        i.at = 0.0;
+    } else {
+        i.at -= t;
+    }
+    i
+}
