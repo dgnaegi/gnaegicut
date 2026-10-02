@@ -92,7 +92,7 @@ pub struct CaptionLayout {
     pub y: f32,
     pub family: String,
     pub bold: bool,
-    pub size: f32, // 1.0 = default size
+    pub size: f32, // 1.0 = the base size; new projects start at 1.4
     /// While true the caption rests at the lower edge of the platform safe zone of the current format and follows it
     /// when the format changes. Moving the caption by hand turns this off.
     #[serde(default = "yes")]
@@ -140,7 +140,7 @@ impl Default for CaptionLayout {
             y: 0.7,
             family: "AL Unica77 Black".into(), // libass picks the Black cut by this name; "AL Unica77" alone gives Medium
             bold: true,
-            size: 1.0,
+            size: 1.4,
             auto_y: true,
         }
     }
