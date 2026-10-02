@@ -131,7 +131,8 @@ mod tests {
                 text: "Second line".into(),
             },
         ];
-        let output = ctx.run_ui(eframe::egui::RawInput::default(), |_| app.copy_transcript());
+        let mut output = ctx.run_ui(eframe::egui::RawInput::default(), |_| app.copy_transcript());
+        output.textures_delta.clear(); // nothing renders in a test
         let copied = output.platform_output.commands.iter().find_map(|c| match c {
             eframe::egui::OutputCommand::CopyText(text) => Some(text.clone()),
             _ => None,

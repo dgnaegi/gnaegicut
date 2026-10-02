@@ -118,7 +118,7 @@ mod tests {
         };
         let out = render(&c, CaptionStyle::Block, &layout, Aspect::Vertical, (1080, 1920));
         assert!(out.contains("Dialogue: 0,0:00:01.00,0:00:02.50,Default,,0,0,0,,{\\pos(540,1440)}HELLO X"));
-        assert!(out.contains("Style: Default,Helvetica,72,"));
+        assert!(out.contains("Style: Default,Helvetica,77,"));
         assert!(out.contains("PlayResY: 1920"));
     }
 
@@ -130,9 +130,13 @@ mod tests {
             text: "Hello".into(),
         }];
         let layout = CaptionLayout::default();
-        assert_eq!((layout.family.as_str(), layout.bold), ("AL Unica77 Black", true));
+        assert_eq!(
+            (layout.family.as_str(), layout.bold, layout.size),
+            ("AL Unica77 Black", true, 1.4)
+        );
+        let layout = CaptionLayout { size: 1.0, ..layout }; // the numbers below are for the base size
         let out = render(&c, CaptionStyle::Pop, &layout, Aspect::Vertical, (1080, 1920));
-        assert!(out.contains("Style: Default,AL Unica77 Black,72,&H007519FF,&H007519FF,&H00000000,&H00000000,-1,"));
+        assert!(out.contains("Style: Default,AL Unica77 Black,77,&H007519FF,&H007519FF,&H00000000,&H00000000,-1,"));
         assert!(
             out.contains(",1,8,0,5,"),
             "border style 1 with an outline of size/9 = 8 px"

@@ -1,6 +1,6 @@
 //! More shortcut tests: tracks and full screen.
 
-use super::tests::{app_with_a_clip, key};
+use super::tests::{RunQuiet, app_with_a_clip, key};
 use super::*;
 
 #[test]
@@ -10,7 +10,7 @@ fn backspace_removes_a_selected_empty_track_but_never_one_with_clips_or_the_last
     let mut app = app_with_a_clip(&ctx); // track 0 holds a clip
     app.add_track(); // track 1, empty
     let backspace = |app: &mut App| {
-        let _ = ctx.run_ui(key(Key::Backspace, true), |ui| shortcuts(&ui.ctx().clone(), app));
+        ctx.run_quiet(key(Key::Backspace, true), |ui| shortcuts(&ui.ctx().clone(), app));
     };
     app.select(Selection::Track(1));
     backspace(&mut app);
@@ -39,13 +39,13 @@ fn full_screen_plays_with_a_sharper_picture_and_esc_or_f_leaves_it() {
     assert!(app.fullscreen && app.playing(), "entering starts playing");
     assert!(app.preview_size().0 > normal.0, "and renders a larger picture");
 
-    let _ = ctx.run_ui(key(Key::Escape, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
+    ctx.run_quiet(key(Key::Escape, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
     assert!(!app.fullscreen && !app.playing(), "Esc leaves and pauses");
     assert_eq!(app.preview_size(), normal, "back to the editing size");
 
-    let _ = ctx.run_ui(key(Key::F, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
+    ctx.run_quiet(key(Key::F, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
     assert!(app.fullscreen, "F enters");
-    let _ = ctx.run_ui(key(Key::F, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
+    ctx.run_quiet(key(Key::F, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
     assert!(!app.fullscreen, "and leaves again");
 }
 
@@ -70,7 +70,7 @@ fn a_space_typed_in_the_transcript_field_is_kept_and_does_not_split_by_itself() 
         end: 2.0,
         text: "hello world".into(),
     }];
-    let _ = ctx.run_ui(RawInput::default(), |ui| {
+    ctx.run_quiet(RawInput::default(), |ui| {
         transcript_field(ui, &mut app);
         ui.memory_mut(|m| m.request_focus(Id::new("transcript-field")));
     });
@@ -78,7 +78,7 @@ fn a_space_typed_in_the_transcript_field_is_kept_and_does_not_split_by_itself() 
         events: vec![Event::Text(" ".into())],
         ..Default::default()
     };
-    let _ = ctx.run_ui(typed, |ui| transcript_field(ui, &mut app));
+    ctx.run_quiet(typed, |ui| transcript_field(ui, &mut app));
     let kept: String = ctx
         .data(|d| d.get_temp(Id::new("transcript-buffer")))
         .unwrap_or_default();
@@ -104,7 +104,7 @@ fn backspace_removes_only_the_selected_caption() {
     };
     app.project.captions = vec![caption("a", 0.0, 1.0), caption("b", 1.0, 2.0), caption("c", 2.0, 3.0)];
     app.select(Selection::Caption(1));
-    let _ = ctx.run_ui(key(Key::Backspace, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
+    ctx.run_quiet(key(Key::Backspace, true), |ui| shortcuts(&ui.ctx().clone(), &mut app));
     assert_eq!(
         app.project.captions.iter().map(|c| c.text.as_str()).collect::<Vec<_>>(),
         ["a", "c"]
