@@ -133,3 +133,12 @@ fn slam_in_overshoots_the_zoom_amount_before_settling() {
         "a damped spring: {expr}"
     );
 }
+
+#[test]
+fn an_item_that_wipes_in_fades_out_instead_of_cutting() {
+    let p = filling(Transition::WipeRight, 1.0, 1.0);
+    assert!(near(at(&p, 0.02, 0.5, 0.5), BLACK), "nothing revealed at the start");
+    assert!(near(at(&p, 1.5, 0.9, 0.5), RED), "fully revealed after the wipe");
+    let leaving = at(&p, 2.5, 0.5, 0.5);
+    assert!((80..180).contains(&leaving[0]), "half faded out, got {leaving:?}");
+}

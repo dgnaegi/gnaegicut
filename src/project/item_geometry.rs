@@ -1,13 +1,19 @@
 //! Where an item is drawn: box size, rotation and position. Used by both the egui overlay and the ffmpeg graph.
 
-use super::{Aspect, Item};
+use super::{Aspect, Item, Kind};
 
 fn even(v: f32) -> u32 {
     ((v.round() as i64).max(2) & !1) as u32
 }
 
 impl Item {
+    /// How much the picture is magnified to fit the frame. Text is rendered at its real pixel size for the frame
+    /// (the font size is in frame pixels), so it is never stretched: then the font size really sets how big it is
+    /// and the picture stays sharp.
     fn contain(&self, aspect: Aspect) -> f32 {
+        if self.kind == Kind::Text {
+            return 1.0;
+        }
         let (w, h) = aspect.size();
         (w as f32 / self.src_w as f32).min(h as f32 / self.src_h as f32)
     }

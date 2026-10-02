@@ -3,6 +3,7 @@
 
 use crate::fonts::{DEFAULT_FONT, Fonts};
 use crate::project::Item;
+use crate::text_bar;
 use fontdue::{Font, FontSettings};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::{fs::File, io::BufWriter};
@@ -25,11 +26,16 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool,
     let width = |l: &str| l.chars().map(|c| font.metrics(c, size).advance_width).sum::<f32>();
     let widest = lines.iter().map(|l| width(l)).fold(1.0, f32::max);
     let ring = if outline { (size / 14.0).max(1.0) } else { 0.0 };
-    let pad = (if bar { size / 2.5 } else { size / 8.0 } + ring * 2.0).ceil();
-    let (w, h) = (
-        (widest + pad * 2.0).ceil() as usize,
-        (line_h * lines.len() as f32 + pad * 2.0).ceil() as usize,
-    );
+    let plan = text_bar::Plan::new(size);
+    let pad = (size / 8.0 + ring * 2.0).ceil();
+    let (w, h) = if bar {
+        plan.size(widest, lines.len(), line_h)
+    } else {
+        (
+            (widest + pad * 2.0).ceil() as usize,
+            (line_h * lines.len() as f32 + pad * 2.0).ceil() as usize,
+        )
+    };
 
     let (mut fill, mut edge) = (vec![0u8; w * h], vec![0u8; w * h]);
     let stamp = |buf: &mut Vec<u8>, bitmap: &[u8], gw: usize, left: f32, top: f32| {
@@ -44,8 +50,12 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool,
         }
     };
     for (n, line) in lines.iter().enumerate() {
-        let mut x = pad + (widest - width(line)) / 2.0;
-        let baseline = pad + n as f32 * line_h + ascent;
+        let (mut x, top) = if bar {
+            (plan.text_x(), plan.line_y(n, line_h))
+        } else {
+            (pad + (widest - width(line)) / 2.0, pad + n as f32 * line_h)
+        };
+        let baseline = top + ascent;
         for c in line.chars() {
             let (m, bitmap) = font.rasterize(c, size);
             let (left, top) = (x + m.xmin as f32, baseline - m.height as f32 - m.ymin as f32);
@@ -65,28 +75,16 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool,
             x += m.advance_width;
         }
     }
-    let mut rgba = compose(&fill, &edge, color);
-    if bar {
-        lay_on_bar(&mut rgba);
-    }
+    let rgba = if bar {
+        let widths: Vec<f32> = lines.iter().map(|l| width(l)).collect();
+        text_bar::paint(&plan, (w, h), &widths, line_h, &fill, color)
+    } else {
+        compose(&fill, &edge, color)
+    };
     Rendered {
         rgba,
         w: w as u32,
         h: h as u32,
-    }
-}
-
-/// The accent colour of the lower-third bar, the same pink as the captions.
-const BAR: [f32; 3] = [255.0, 25.0, 117.0];
-
-/// Puts the text on a solid bar: every pixel becomes the bar colour with the text's colour over it.
-fn lay_on_bar(rgba: &mut [u8]) {
-    for px in rgba.as_chunks_mut::<4>().0 {
-        let a = px[3] as f32 / 255.0;
-        for c in 0..3 {
-            px[c] = (px[c] as f32 * a + BAR[c] * (1.0 - a)).round() as u8;
-        }
-        px[3] = 255;
     }
 }
 
@@ -176,17 +174,5 @@ mod tests {
         assert!(item.src_w > 100 && item.src_h > item.src_w / 6);
         assert!(std::fs::metadata(&item.path).unwrap().len() > 100);
         assert_eq!(item.name, "Hello");
-    }
-}
-
-#[cfg(test)]
-mod bar_tests {
-    use super::*;
-
-    #[test]
-    fn a_bar_makes_every_pixel_opaque_and_pink_where_there_is_no_text() {
-        let mut px = vec![255, 255, 255, 0, 255, 255, 255, 255];
-        lay_on_bar(&mut px);
-        assert_eq!(px, [255, 25, 117, 255, 255, 255, 255, 255]);
     }
 }

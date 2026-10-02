@@ -5,19 +5,22 @@ use crate::fonts::DEFAULT_FONT;
 use crate::project::{Item, Kind, Transition};
 use crate::text;
 
+/// Where a new lower third starts, as a fraction of the frame width.
+const LEFT_MARGIN: f32 = 0.06;
+
 impl App {
     /// Adds a text item on an overlay track at the playhead.
     pub fn add_text(&mut self) {
         self.add_text_item(|_| {});
     }
 
-    /// Adds a lower third: two lines (name, role) on a coloured bar low in the picture, sliding in and out.
+    /// Adds a lower third: two lines (name, role) on a coloured bar low in the picture, wiping in and fading out.
     pub fn add_lower_third(&mut self) {
         self.add_text_item(|item| {
-            item.text = "NAME\nRole or place".into();
-            (item.bar, item.outline, item.font_size) = (true, false, 64.0);
-            (item.x, item.y, item.end) = (0.5, 0.78, 4.0);
-            (item.transition, item.fade_in, item.fade_out) = (Transition::SlideRight, 0.4, 0.4);
+            item.text = "Name\nRole or place".into();
+            (item.bar, item.outline, item.font_size, item.color) = (true, false, 56.0, [0, 0, 0]);
+            (item.x, item.y, item.end) = (0.4, 0.78, 4.0);
+            (item.transition, item.fade_in, item.fade_out) = (Transition::WipeRight, 0.35, 0.25);
         });
     }
 
@@ -34,6 +37,9 @@ impl App {
             self.status = e;
             return;
         }
+        if item.bar {
+            item.x = LEFT_MARGIN + item.frac(self.project.aspect).0 / 2.0;
+        }
         let track = self.track.max(1);
         item.at = self.project.fit_at(track, &item, item.at);
         let id = self.project.add(track, item);
@@ -44,11 +50,16 @@ impl App {
 
     /// Re-renders a text item after its text or look changed.
     pub fn refresh_text(&mut self, id: u64) {
+        let aspect = self.project.aspect;
         let (Some(fonts), Some(item)) = (&self.fonts, self.project.get_mut(id)) else {
             return;
         };
+        let left = item.x - item.frac(aspect).0 / 2.0;
         if let Err(e) = text::refresh(fonts, item) {
             self.status = e;
+        }
+        if item.bar {
+            item.x = left + item.frac(aspect).0 / 2.0; // a lower third grows to the right, its left edge stays
         }
     }
 }

@@ -138,10 +138,15 @@ impl Item {
         })
     }
 
-    /// How the item leaves: a join's effect if it has one, otherwise its own outro.
+    /// How the item leaves: a join's effect if it has one, otherwise its own outro. A wipe only brings things in,
+    /// so an item that wipes in fades out.
     pub fn exit(&self) -> Phase {
         self.link_out.unwrap_or(Phase {
-            effect: self.transition,
+            effect: if self.transition.is_reveal() {
+                Transition::Fade
+            } else {
+                self.transition
+            },
             len: self.fade_out,
         })
     }

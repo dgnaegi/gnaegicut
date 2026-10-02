@@ -23,6 +23,7 @@ mod sound_state;
 mod sounds;
 mod text;
 mod text_actions;
+mod text_bar;
 mod theme;
 mod thumbs;
 mod ui;
