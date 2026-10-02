@@ -3,6 +3,7 @@
 mod aspect;
 mod caption;
 mod edit;
+mod freeze;
 mod item;
 mod item_audio;
 mod item_fx;
@@ -15,6 +16,8 @@ mod media;
 mod place;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_freeze;
 #[cfg(test)]
 mod tests_join;
 #[cfg(test)]

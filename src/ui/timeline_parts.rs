@@ -2,11 +2,10 @@
 
 use super::timeline_items::{ADD_ROW, Layout, RULER, snap};
 use crate::app::{App, Selection};
-use crate::theme::{ACCENT, BLACK, BORDER, WHITE, bold};
-use eframe::egui::{Align2, Id, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use crate::theme::{ACCENT, BLACK, bold};
+use eframe::egui::{Align2, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 
 pub(super) const CAPTION_LANE: f32 = 28.0;
-const GAP: f32 = super::timeline_items::GAP;
 
 pub(super) fn ruler(ui: &Ui, lay: &Layout, seconds: f64) {
     let p = ui.painter_at(lay.rect);
@@ -29,29 +28,6 @@ pub(super) fn ruler(ui: &Ui, lay: &Layout, seconds: f64) {
                 BLACK,
             );
         }
-    }
-}
-
-pub(super) fn captions_lane(ui: &mut Ui, app: &mut App, lay: &Layout) {
-    let top = lay.captions_top() + GAP;
-    let lane = Rect::from_min_max(pos2(lay.x(0.0), top), pos2(lay.rect.right(), top + CAPTION_LANE));
-    let resp = ui.interact(lane, Id::new("captions-lane"), Sense::CLICK);
-    if resp.clicked() {
-        app.select(Selection::Captions);
-    }
-    let p = ui.painter_at(lay.rect);
-    let selected = app.selection == Selection::Captions;
-    for c in &app.project.captions {
-        let r = Rect::from_min_max(pos2(lay.x(c.start), top), pos2(lay.x(c.end), top + CAPTION_LANE));
-        p.rect_filled(r, 0.0, if selected { ACCENT } else { WHITE });
-        p.rect_stroke(r, 0.0, Stroke::new(BORDER, BLACK), StrokeKind::Inside);
-        p.with_clip_rect(r).text(
-            r.left_center() + vec2(4.0, 0.0),
-            Align2::LEFT_CENTER,
-            &c.text,
-            bold(10.0),
-            if selected { WHITE } else { BLACK },
-        );
     }
 }
 

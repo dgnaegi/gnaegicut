@@ -6,7 +6,7 @@ fn the_automatic_position_keeps_a_two_line_caption_inside_the_safe_zone_of_every
     for aspect in Aspect::ALL {
         let (_, y) = layout.position(aspect);
         let (_, h) = aspect.size();
-        let line = aspect.size().0.min(h) as f32 / 15.0;
+        let line = aspect.size().0.min(h) as f32 / 14.0;
         let bottom = y + 1.2 * line / h as f32; // lower edge of two lines, with a little outline
         assert!(
             bottom <= 1.0 - aspect.safe_margins()[3],

@@ -178,7 +178,12 @@ Captions rest at 60% of the frame height (`CaptionLayout::position`), pulled up 
 platform buttons below the safe zone, and wrap inside the narrower of the two side margins. Heavy styles (Pop) are drawn as two
 ASS layers: a blurred outline underneath as the soft shadow, and perfectly sharp letters on top. Splitting
 (`caption/split.rs`) breaks a caption into pieces of at most N words and shares its time by character count, so the pieces
-tile the original span exactly. The transcript field shows every caption one per line, with a button to copy it all.
+tile the original span exactly. The transcript field shows every caption one per line, with a button to copy it all, and it is
+editable (`caption/transcript`): a line break or a double space inside a caption splits it, removing a line break joins two, deleting
+a line removes the caption, and captions keep their times wherever the text did not change. While typing the field keeps exactly what
+was typed and is only rewritten after a split or join. On the timeline (`ui/timeline_captions.rs`) each caption is a block: drag an
+end to make it longer or shorter, drag the middle to move it, Backspace removes it; neighbours and a minimum length are enforced in
+`caption/edit.rs`.
 
 
 `whisper::transcribe` renders the mixed audio to 16 kHz mono (including any voice enhancement, which helps accuracy),

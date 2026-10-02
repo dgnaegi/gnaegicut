@@ -2,12 +2,13 @@
 
 mod edit;
 mod split;
+mod transcript;
 
 use super::Aspect;
 use serde::{Deserialize, Serialize};
 
 /// A subtitle line. Times are on the timeline, not in a source file.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Caption {
     pub start: f64,
     pub end: f64,
@@ -114,7 +115,7 @@ impl CaptionLayout {
             return (self.x, self.y);
         }
         let (w, h) = aspect.size();
-        let line = w.min(h) as f32 / 15.0 * self.size; // the caption font size in pixels (see media::ass)
+        let line = w.min(h) as f32 / 14.0 * self.size; // the caption font size in pixels (see media::ass)
         let half_block = 1.25 * line / h as f32; // half the height of a two-line caption
         let [_, top, _, bottom] = aspect.safe_margins();
         let (lowest, highest) = (top + half_block, (1.0 - bottom - half_block).max(top + half_block));

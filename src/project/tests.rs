@@ -181,3 +181,23 @@ fn a_nearby_playhead_lands_on_the_seam_and_a_far_one_stays_put() {
     assert_eq!(snap(4.5, 0.0, &edges, 100.0), 4.5, "far from every seam");
     assert_eq!(snap(5.96, 0.0, &edges, 100.0), 6.0, "the end counts too");
 }
+
+#[test]
+fn trimmed_video_grows_back_to_its_source_but_no_further() {
+    let (mut p, a, _) = project(); // a: video at 0, 4 s long
+    let src = p.get(a).unwrap().src_len;
+    p.get_mut(a).unwrap().start = 1.0;
+    p.get_mut(a).unwrap().at = 2.0;
+    p.trim_edge(a, true, 1.5); // pull the front out by 0.5 s
+    let i = p.get(a).unwrap();
+    assert_eq!(
+        (i.start, i.at),
+        (0.5, 1.5),
+        "cut-off part returns, the picture stays in sync"
+    );
+    p.trim_edge(a, true, -9.0);
+    let i = p.get(a).unwrap();
+    assert_eq!((i.start, i.at), (0.0, 1.0), "stops at the start of the source");
+    p.trim_edge(a, false, 99.0);
+    assert_eq!(p.get(a).unwrap().end, src, "stops at the end of the source");
+}

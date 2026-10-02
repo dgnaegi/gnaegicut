@@ -27,6 +27,9 @@ impl Item {
             "aformat=channel_layouts=stereo".into(),
             "asetpts=PTS-STARTPTS".into(),
         ];
+        if self.reversed {
+            f.extend(["areverse", "asetpts=PTS-STARTPTS"].map(String::from));
+        }
         if self.enhance {
             // Cut rumble, reduce steady noise, even out loudness, then normalise to -16 LUFS (social media standard).
             f.extend(

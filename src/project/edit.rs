@@ -1,6 +1,8 @@
 //! Operations that restructure the timeline.
 
-use super::{Caption, Item, Project, Track};
+use super::{Caption, Item, Kind, Project, Track};
+
+const MIN_LEN: f64 = 0.1; // an item never gets shorter than this
 
 impl Project {
     /// Splits the item at timeline time `t`. Returns the id of the right-hand piece, or None
@@ -14,13 +16,42 @@ impl Project {
         }
         let mut right = item.clone();
         right.at = t;
-        right.start += local;
-        self.tracks[ti].items[ii].end = right.start;
+        // A reversed clip plays its source backwards, so the part that comes first is the one at the source's end.
+        let cut = if item.reversed {
+            item.end - local
+        } else {
+            item.start + local
+        };
+        if item.reversed {
+            right.end = cut;
+            self.tracks[ti].items[ii].start = cut;
+        } else {
+            right.start = cut;
+            self.tracks[ti].items[ii].end = cut;
+        }
         right.id = self.next_id;
         self.next_id += 1;
         let new_id = right.id;
         self.tracks[ti].items.insert(ii + 1, right);
         Some(new_id)
+    }
+
+    /// Drags the left (`front`) or right edge of an item to timeline time `t`. Video and sound can grow back
+    /// out to the ends of their source, which brings a previously cut-off part back; the other edge stays put.
+    pub fn trim_edge(&mut self, id: u64, front: bool, t: f64) {
+        let Some(item) = self.get_mut(id) else { return };
+        let limited = matches!(item.kind, Kind::Video | Kind::Audio);
+        if front {
+            if !limited {
+                return;
+            }
+            let delta = (t - item.at).clamp(-item.start.min(item.at), item.len() - MIN_LEN);
+            item.start += delta;
+            item.at += delta;
+        } else {
+            let most = if limited { item.src_len } else { f64::MAX };
+            item.end = (t - item.at + item.start).clamp(item.start + MIN_LEN, most.max(item.start + MIN_LEN));
+        }
     }
 
     /// Removes a track if it is empty and not the last one. Returns whether it was removed.

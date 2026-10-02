@@ -40,6 +40,9 @@ pub struct Item {
     /// Colour treatment.
     #[serde(default)]
     pub look: Look,
+    /// Plays the trimmed part backwards (picture and sound).
+    #[serde(default)]
+    pub reversed: bool,
     /// Seconds already cut off the front by `Project::tail_from`, so zoom effects stay continuous.
     pub cut: f64,
     /// Text items only: content and look. `path` points at the rendered PNG.
@@ -96,6 +99,7 @@ impl Item {
             amount: 0.3,
             shake: 0.0,
             look: Look::None,
+            reversed: false,
             cut: 0.0,
             text: String::new(),
             font: String::new(),
@@ -181,6 +185,7 @@ impl Item {
         h.write_u8(self.enhance as u8);
         h.write_u8(self.transition as u8);
         h.write_u8(self.look as u8);
+        h.write_u8(self.reversed as u8);
         if let Some(j) = self.join {
             h.write_u8(j.effect as u8);
             h.write_u32(j.len.to_bits());

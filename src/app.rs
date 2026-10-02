@@ -110,7 +110,7 @@ impl App {
     pub fn select(&mut self, selection: Selection) {
         self.selection = selection;
         match selection {
-            Selection::Captions => self.tab = Tab::Captions,
+            Selection::Captions | Selection::Caption(_) => self.tab = Tab::Captions,
             Selection::Item(_) if self.tab == Tab::Captions => self.tab = Tab::Place,
             _ => {}
         }

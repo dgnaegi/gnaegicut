@@ -1,14 +1,12 @@
 use super::timeline_items::{self as items, ADD_ROW, GAP, GUTTER, Layout, RULER, lane_height};
-use super::timeline_parts::{CAPTION_LANE, captions_lane, highlight_drop, ruler, scrub};
-use super::timeline_zoom::{MAX_ZOOM, MIN_ZOOM};
+use super::timeline_parts::{CAPTION_LANE, highlight_drop, ruler, scrub};
 use super::{timeline_gutter, timeline_joins};
 use crate::app::{App, Selection};
 use crate::drop::TimelineView;
 use crate::patterns;
 use crate::project::Kind as MediaKind;
 use crate::theme::{ACCENT, BLACK, BORDER, MUTED};
-use crate::widgets::{Kind, button, caps};
-use eframe::egui::{CursorIcon, Rect, ScrollArea, Sense, Slider, Stroke, Ui, pos2, vec2};
+use eframe::egui::{CursorIcon, Rect, ScrollArea, Sense, Stroke, Ui, pos2, vec2};
 
 const GRIP: f32 = 10.0;
 const MIN_PANEL: f32 = 170.0;
@@ -16,7 +14,7 @@ const MAX_PANEL_SHARE: f32 = 0.8; // the timeline may take at most this share of
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     grip(ui, app);
-    controls(ui, app);
+    super::timeline_tools::show(ui, app);
     // Pinch, or Cmd+scroll, over the tracks zooms the time axis around the pointer.
     let pinch = ui.input(|i| i.zoom_delta());
     let over = ui
@@ -46,27 +44,6 @@ fn grip(ui: &mut Ui, app: &mut App) {
         let room = ui.ctx().content_rect().height() * MAX_PANEL_SHARE;
         app.timeline_height = (app.timeline_height - ui.input(|i| i.pointer.delta().y)).clamp(MIN_PANEL, room);
     }
-}
-
-fn controls(ui: &mut Ui, app: &mut App) {
-    ui.horizontal_wrapped(|ui| {
-        if button(ui, "Split (S)", Kind::Plain).clicked() {
-            app.split();
-        }
-        if button(ui, "Delete", Kind::Plain).clicked() {
-            app.delete();
-        }
-        let magnet = if app.magnet { Kind::Active } else { Kind::Plain };
-        if button(ui, "Magnet", magnet).clicked() {
-            app.magnet = !app.magnet;
-        }
-        ui.add(
-            Slider::new(&mut app.zoom, MIN_ZOOM..=MAX_ZOOM)
-                .logarithmic(true)
-                .text("zoom"),
-        );
-        caps(ui, &format!("{:.1}s / {:.1}s", app.playhead, app.project.total()));
-    });
 }
 
 fn track(ui: &mut Ui, app: &mut App) {
@@ -106,7 +83,7 @@ fn track(ui: &mut Ui, app: &mut App) {
     for item in app.project.items().filter(|i| i.has_audio) {
         app.waveforms.request(&item.path, &app.tx, &app.ctx);
     }
-    let (mut dragged, mut picked, mut fading) = (None, None, None);
+    let (mut dragged, mut picked, mut fading, mut trimmed) = (None, None, None, None);
     for (ti, track) in app.project.tracks.iter().enumerate() {
         for item in &track.items {
             let selected = app.selection == Selection::Item(item.id);
@@ -118,6 +95,7 @@ fn track(ui: &mut Ui, app: &mut App) {
                         .or(super::timeline_audio::fade_handles(ui, &lay, ti, item)
                             .map(|(out, secs)| (item.id, out, secs)));
             }
+            trimmed = trimmed.or(super::timeline_trim::handles(ui, &lay, ti, item));
             if resp.clicked() || resp.drag_started() {
                 picked = Some((item.id, ti));
             }
@@ -132,6 +110,10 @@ fn track(ui: &mut Ui, app: &mut App) {
             *(if out { &mut it.fade_out } else { &mut it.fade_in }) = secs;
         }
     }
+    if let Some((id, front, t)) = trimmed {
+        app.pause_for_edit();
+        app.project.trim_edge(id, front, t);
+    }
     if let Some((id, ti)) = picked {
         app.select(Selection::Item(id));
         app.track = ti;
@@ -144,7 +126,7 @@ fn track(ui: &mut Ui, app: &mut App) {
 
     highlight_drop(ui, app, &lay);
     timeline_joins::show(ui, app, &lay);
-    captions_lane(ui, app, &lay);
+    super::timeline_captions::show(ui, app, &lay);
     scrub(app, &bg, &lay);
     let x = lay.x(app.playhead);
     p.line_segment(

@@ -18,7 +18,7 @@ pub fn interact(ui: &mut Ui, app: &mut App, frame: Rect) {
     }
     match app.selection {
         Selection::Item(id) => edit_item(ui, app, frame, id),
-        Selection::Captions => move_captions(ui, app, frame),
+        Selection::Captions | Selection::Caption(_) => move_captions(ui, app, frame),
         Selection::None | Selection::Track(_) => {}
     }
 }

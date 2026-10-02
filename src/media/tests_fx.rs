@@ -126,3 +126,14 @@ fn looks_change_the_colours() {
     let outside = at(&square(0.0, Look::Vignette), 0.5, 0.05, 0.05);
     assert!(near(outside, BLACK), "the vignette does not paint outside the picture");
 }
+
+#[test]
+fn a_reversed_clip_still_renders_picture_and_sound() {
+    use super::testutil::video;
+    let mut p = Project::default();
+    let id = p.add(0, video("rev", "red", (320, 180), 2, true));
+    p.get_mut(id).unwrap().reversed = true;
+    assert!(frame(&p, 1.0, 90, 160).is_some(), "the reverse filter chain is valid");
+    let samples = stream::audio(&p).unwrap();
+    assert!(samples.iter().any(|s| s.abs() > 0.05), "areverse keeps the tone");
+}

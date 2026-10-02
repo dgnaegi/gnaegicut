@@ -28,7 +28,7 @@ pub fn render(
     (w, h): (u32, u32),
 ) -> String {
     let look = style.look();
-    let size = (w.min(h) as f32 / 15.0 * layout.size).round() as u32;
+    let size = (w.min(h) as f32 / 14.0 * layout.size).round() as u32;
     let (border_style, outline) = match (look.boxed, look.heavy) {
         (true, _) => (3, size / 5),
         (false, true) => (1, size / 9),

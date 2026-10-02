@@ -139,7 +139,10 @@ impl App {
 
     pub fn delete(&mut self) {
         self.stop();
-        if let Selection::Track(index) = self.selection {
+        if let Selection::Caption(index) = self.selection {
+            self.project.remove_caption(index);
+            self.select(Selection::None);
+        } else if let Selection::Track(index) = self.selection {
             self.delete_track(index);
         } else if let Some(id) = self.selected_item() {
             if self.magnet {

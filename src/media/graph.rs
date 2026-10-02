@@ -95,6 +95,9 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
     }
     pre.push(format!("fps={FPS}"));
     pre.push("setpts=PTS-STARTPTS".into());
+    if item.reversed && !item.kind.is_still() {
+        pre.extend(["reverse", "setpts=PTS-STARTPTS"].map(String::from));
+    }
     pre.push(match item.zoom_expr() {
         None => format!("scale={bw}:{bh}"),
         Some(z) => format!("scale=w='{bw}*({z})':h='{bh}*({z})':eval=frame,crop={bw}:{bh}"),

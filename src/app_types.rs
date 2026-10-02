@@ -27,6 +27,8 @@ pub enum Selection {
     None,
     Item(u64),
     Captions,
+    /// One caption picked on the timeline: drag its ends to change its length, Backspace removes it.
+    Caption(usize),
     /// A lane picked by clicking its number; Backspace or Delete removes it if it is empty.
     Track(usize),
 }

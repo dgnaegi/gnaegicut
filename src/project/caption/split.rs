@@ -29,21 +29,29 @@ impl Caption {
                 piece
             })
             .collect();
-        let total: usize = texts.iter().map(|t| t.chars().count()).sum();
-        let (mut at, mut seen) = (self.start, 0usize);
-        let last = texts.len() - 1;
+        Self::tiled(self.start, self.end, texts)
+    }
+
+    /// One caption per text, tiling `start..end` exactly; each gets time in proportion to its number of characters.
+    pub(super) fn tiled(start: f64, end: f64, texts: Vec<String>) -> Vec<Caption> {
+        let total = texts.iter().map(|t| t.chars().count()).sum::<usize>().max(1);
+        let (mut at, mut seen, last) = (start, 0usize, texts.len().saturating_sub(1));
         texts
             .into_iter()
             .enumerate()
             .map(|(i, text)| {
                 seen += text.chars().count();
-                let end = if i == last {
-                    self.end
+                let to = if i == last {
+                    end
                 } else {
-                    self.start + (self.end - self.start) * seen as f64 / total as f64
+                    start + (end - start) * seen as f64 / total as f64
                 };
-                let piece = Caption { start: at, end, text };
-                at = end;
+                let piece = Caption {
+                    start: at,
+                    end: to,
+                    text,
+                };
+                at = to;
                 piece
             })
             .collect()

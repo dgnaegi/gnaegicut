@@ -2,7 +2,7 @@ use super::font_picker;
 use crate::app::{App, Selection};
 use crate::project::CaptionStyle;
 use crate::widgets::{Kind, button, caps, chip, segmented, warn};
-use eframe::egui::{DragValue, Slider, TextEdit, Ui, vec2};
+use eframe::egui::{DragValue, Id, Slider, TextEdit, Ui, vec2};
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     if button(ui, "Generate captions", Kind::Cta).clicked() {
@@ -20,21 +20,46 @@ pub fn show(ui: &mut Ui, app: &mut App) {
     list(ui, app);
 }
 
-/// Every caption at once in one selectable field, and a button to copy them all.
+/// The non-blank, trimmed lines of a text: what matters when comparing a typed transcript with the captions.
+fn trimmed_lines(text: &str) -> Vec<&str> {
+    text.lines().map(str::trim).filter(|l| !l.is_empty()).collect()
+}
+
+/// Every caption at once in one field, one per line, to read, copy and edit. A line break or a double space inside a
+/// line splits that caption, removing a line break joins two. While typing the field keeps exactly what was typed
+/// (a space at the end of a word must survive), and is only rewritten when a caption was split or joined.
 fn transcript(ui: &mut Ui, app: &mut App) {
     if app.project.captions.is_empty() {
         return;
     }
-    let text = app.project.transcript();
-    let mut shown: &str = &text; // a plain &str is a read-only text buffer: selectable and copyable, not editable
-    ui.add(
-        TextEdit::multiline(&mut shown)
-            .desired_rows(6)
-            .desired_width(f32::INFINITY),
-    );
+    transcript_field(ui, app);
     if button(ui, "Copy all", Kind::Plain).clicked() {
         app.copy_transcript();
     }
+}
+
+/// The editable text of all captions (see `transcript`).
+pub(super) fn transcript_field(ui: &mut Ui, app: &mut App) {
+    let (field, store) = (Id::new("transcript-field"), Id::new("transcript-buffer"));
+    let canonical = app.project.transcript();
+    let typing = ui.memory(|m| m.has_focus(field));
+    let mut buffer: String = if typing {
+        ui.data(|d| d.get_temp(store)).unwrap_or_else(|| canonical.clone())
+    } else {
+        canonical
+    };
+    let edit = TextEdit::multiline(&mut buffer)
+        .id(field)
+        .desired_rows(6)
+        .desired_width(f32::INFINITY);
+    if ui.add(edit).changed() {
+        app.project.apply_transcript(&buffer);
+        let now = app.project.transcript();
+        if trimmed_lines(&buffer) != trimmed_lines(&now) {
+            buffer = now; // a split or a join happened: show the new lines
+        }
+    }
+    ui.data_mut(|d| d.insert_temp(store, buffer));
 }
 
 /// Break every caption into pieces of at most this many words.
@@ -78,7 +103,7 @@ fn style(ui: &mut Ui, app: &mut App) {
     if !layout.auto_y && button(ui, "Reset position", Kind::Plain).clicked() {
         layout.reset_position();
     }
-    let kind = if app.selection == Selection::Captions {
+    let kind = if matches!(app.selection, Selection::Captions | Selection::Caption(_)) {
         Kind::Active
     } else {
         Kind::Plain

@@ -2,6 +2,7 @@ mod actions;
 mod app;
 mod app_types;
 mod audio_out;
+mod clip_actions;
 mod clipboard;
 mod drop;
 mod fonts;
