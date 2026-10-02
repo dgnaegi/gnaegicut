@@ -14,7 +14,7 @@ pub struct Rendered {
 }
 
 /// Straight-alpha RGBA of centred, multi-line text.
-pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool) -> Rendered {
+pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool, bar: bool) -> Rendered {
     let lines: Vec<&str> = if text.is_empty() {
         vec!["Text"]
     } else {
@@ -25,7 +25,7 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool)
     let width = |l: &str| l.chars().map(|c| font.metrics(c, size).advance_width).sum::<f32>();
     let widest = lines.iter().map(|l| width(l)).fold(1.0, f32::max);
     let ring = if outline { (size / 14.0).max(1.0) } else { 0.0 };
-    let pad = (size / 8.0 + ring * 2.0).ceil();
+    let pad = (if bar { size / 2.5 } else { size / 8.0 } + ring * 2.0).ceil();
     let (w, h) = (
         (widest + pad * 2.0).ceil() as usize,
         (line_h * lines.len() as f32 + pad * 2.0).ceil() as usize,
@@ -65,10 +65,28 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool)
             x += m.advance_width;
         }
     }
+    let mut rgba = compose(&fill, &edge, color);
+    if bar {
+        lay_on_bar(&mut rgba);
+    }
     Rendered {
-        rgba: compose(&fill, &edge, color),
+        rgba,
         w: w as u32,
         h: h as u32,
+    }
+}
+
+/// The accent colour of the lower-third bar, the same pink as the captions.
+const BAR: [f32; 3] = [255.0, 25.0, 117.0];
+
+/// Puts the text on a solid bar: every pixel becomes the bar colour with the text's colour over it.
+fn lay_on_bar(rgba: &mut [u8]) {
+    for px in rgba.as_chunks_mut::<4>().0 {
+        let a = px[3] as f32 / 255.0;
+        for c in 0..3 {
+            px[c] = (px[c] as f32 * a + BAR[c] * (1.0 - a)).round() as u8;
+        }
+        px[3] = 255;
     }
 }
 
@@ -112,10 +130,18 @@ pub fn refresh(fonts: &Fonts, item: &mut Item) -> Result<(), String> {
         )
     });
     let font = loaded.ok_or("font not found")?.map_err(|e| e.to_string())?;
-    let img = render(&font, &item.text, item.font_size, item.color, item.outline);
+    let img = render(&font, &item.text, item.font_size, item.color, item.outline, item.bar);
 
     let mut hasher = DefaultHasher::new();
-    (&item.text, name, item.font_size.to_bits(), item.color, item.outline).hash(&mut hasher);
+    (
+        &item.text,
+        name,
+        item.font_size.to_bits(),
+        item.color,
+        item.outline,
+        item.bar,
+    )
+        .hash(&mut hasher);
     let path = std::env::temp_dir().join(format!("gnaegicut-text-{:x}.png", hasher.finish()));
     let mut enc = png::Encoder::new(
         BufWriter::new(File::create(&path).map_err(|e| e.to_string())?),
@@ -150,5 +176,17 @@ mod tests {
         assert!(item.src_w > 100 && item.src_h > item.src_w / 6);
         assert!(std::fs::metadata(&item.path).unwrap().len() > 100);
         assert_eq!(item.name, "Hello");
+    }
+}
+
+#[cfg(test)]
+mod bar_tests {
+    use super::*;
+
+    #[test]
+    fn a_bar_makes_every_pixel_opaque_and_pink_where_there_is_no_text() {
+        let mut px = vec![255, 255, 255, 0, 255, 255, 255, 255];
+        lay_on_bar(&mut px);
+        assert_eq!(px, [255, 25, 117, 255, 255, 255, 255, 255]);
     }
 }

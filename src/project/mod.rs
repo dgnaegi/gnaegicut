@@ -3,6 +3,7 @@
 mod aspect;
 mod caption;
 mod edit;
+mod fit;
 mod freeze;
 mod item;
 mod item_audio;

@@ -39,7 +39,9 @@ impl Project {
     /// Drags the left (`front`) or right edge of an item to timeline time `t`. Video and sound can grow back
     /// out to the ends of their source, which brings a previously cut-off part back; the other edge stays put.
     pub fn trim_edge(&mut self, id: u64, front: bool, t: f64) {
+        let (earliest, latest) = self.room_around(id);
         let Some(item) = self.get_mut(id) else { return };
+        let t = if front { t.max(earliest) } else { t.min(latest) }; // never into a neighbouring clip
         let limited = matches!(item.kind, Kind::Video | Kind::Audio);
         if front {
             if !limited {
@@ -87,8 +89,8 @@ impl Project {
     pub fn place(&mut self, id: u64, track: usize, at: f64) {
         let Some((ti, ii)) = self.find(id) else { return };
         let mut item = self.tracks[ti].items.remove(ii);
-        item.at = at.max(0.0);
         let track = track.min(self.tracks.len() - 1);
+        item.at = self.fit_at(track, &item, at); // next to the clips there, never on top of them
         self.tracks[track].items.push(item);
         self.tracks[track].items.sort_by(|a, b| a.at.total_cmp(&b.at));
     }

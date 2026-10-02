@@ -3,7 +3,6 @@ use std::path::Path;
 use std::process::Command;
 
 pub const IMAGE_EXTS: [&str; 6] = ["png", "jpg", "jpeg", "webp", "bmp", "tiff"];
-pub const VIDEO_EXTS: [&str; 6] = ["mp4", "mov", "m4v", "mkv", "webm", "avi"];
 pub const AUDIO_EXTS: [&str; 6] = ["mp3", "wav", "m4a", "aac", "ogg", "flac"];
 
 pub fn probe(path: &Path) -> Result<Item, String> {

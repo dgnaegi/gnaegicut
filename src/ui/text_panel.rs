@@ -22,6 +22,7 @@ pub fn show(ui: &mut Ui, app: &mut App, id: u64) {
     ui.horizontal(|ui| {
         changed |= ui.color_edit_button_srgb(&mut it.color).changed();
         changed |= segmented(ui, &mut it.outline, &[(true, "Outline"), (false, "Plain")]);
+        changed |= segmented(ui, &mut it.bar, &[(true, "Bar"), (false, "No bar")]);
     });
     if changed {
         app.refresh_text(id);

@@ -39,7 +39,7 @@ impl Project {
             } else {
                 track
             };
-            item.at = at;
+            item.at = if stack { at } else { self.fit_at(target, &item, at) };
             if target > 0 && item.kind.is_still() {
                 item.scale = 0.5;
             }

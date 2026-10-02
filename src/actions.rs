@@ -1,11 +1,9 @@
 //! User-triggered operations. UI code calls these; they hold no layout.
 
-use crate::app::{App, Event, Selection, Tab};
-use crate::fonts::DEFAULT_FONT;
+use crate::app::{App, Event, Selection};
 use crate::media::{export::export, whisper};
 use crate::player::Player;
-use crate::project::{Item, Kind};
-use crate::text;
+use crate::project::Kind;
 use std::sync::mpsc::Sender;
 
 impl App {
@@ -28,27 +26,6 @@ impl App {
         }
         let (w, h) = self.preview_size();
         self.player = Some(Player::start(&self.project, self.playhead, w, h, self.mixer()));
-    }
-
-    /// Pick videos and images and place them one after another at the end of the active track.
-    pub fn import(&mut self) {
-        let exts: Vec<_> = crate::media::probe::VIDEO_EXTS
-            .iter()
-            .chain(&crate::media::probe::IMAGE_EXTS)
-            .collect();
-        self.import_files("video and images", &exts);
-    }
-
-    /// Pick sound or music files.
-    pub fn import_sound(&mut self) {
-        let exts: Vec<_> = crate::media::probe::AUDIO_EXTS.iter().collect();
-        self.import_files("sound", &exts);
-    }
-
-    fn import_files(&mut self, label: &str, exts: &[&&str]) {
-        if let Some(files) = rfd::FileDialog::new().add_filter(label, exts).pick_files() {
-            self.add_files_in_sequence(&files);
-        }
     }
 
     /// Selects the first use of a library file and moves the playhead there.
@@ -81,36 +58,6 @@ impl App {
     pub fn remove_track(&mut self, index: usize) {
         if self.project.remove_empty_track(index) {
             self.track = self.track.min(self.project.tracks.len() - 1);
-        }
-    }
-
-    /// Adds a text item on an overlay track at the playhead.
-    pub fn add_text(&mut self) {
-        self.stop();
-        let Some(fonts) = &self.fonts else {
-            self.status = "Fonts are still loading".into();
-            return;
-        };
-        let mut item = Item::new(String::new(), String::new(), Kind::Text, (1, 1), 0.0, false);
-        (item.text, item.font, item.end, item.at) = ("Your text".into(), DEFAULT_FONT.into(), 3.0, self.playhead);
-        if let Err(e) = text::refresh(fonts, &mut item) {
-            self.status = e;
-            return;
-        }
-        let track = self.track.max(1);
-        let id = self.project.add(track, item);
-        self.select(Selection::Item(id));
-        self.tab = Tab::Text;
-        self.track = track;
-    }
-
-    /// Re-renders a text item after its text or look changed.
-    pub fn refresh_text(&mut self, id: u64) {
-        let (Some(fonts), Some(item)) = (&self.fonts, self.project.get_mut(id)) else {
-            return;
-        };
-        if let Err(e) = text::refresh(fonts, item) {
-            self.status = e;
         }
     }
 

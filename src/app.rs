@@ -22,7 +22,6 @@ pub struct App {
     pub player: Option<Player>,
     pub zoom: f32, // timeline pixels per second
     pub safe_zones: bool,
-    pub library_open: bool,
     pub library_tab: LibraryTab,
     pub sounds: SoundsUi,
     /// The timeline's last layout, so drops can find the lane and time under the pointer.
@@ -77,7 +76,6 @@ impl App {
             player: None,
             zoom: 60.0,
             safe_zones: false,
-            library_open: true,
             library_tab: LibraryTab::Files,
             sounds: SoundsUi::default(),
             timeline_view: None,

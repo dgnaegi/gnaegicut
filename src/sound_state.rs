@@ -9,6 +9,7 @@ use std::collections::HashSet;
 pub enum LibraryTab {
     Files,
     Sounds,
+    Text,
 }
 
 #[derive(Default)]

@@ -14,6 +14,7 @@ mod stage_guides;
 mod stage_overlay;
 mod stage_scale;
 mod text_panel;
+mod text_tab;
 mod timeline;
 mod timeline_audio;
 mod timeline_captions;
@@ -25,6 +26,7 @@ mod timeline_tools;
 mod timeline_trim;
 mod timeline_zoom;
 mod toolbar;
+mod toolbar_icons;
 mod transition_panel;
 
 use crate::app::App;
@@ -157,12 +159,10 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
         .frame(frame())
         .default_size(340.0)
         .show(ui, |ui| inspector::show(ui, app));
-    if app.library_open {
-        Panel::left("library")
-            .frame(frame())
-            .default_size(280.0)
-            .show(ui, |ui| library::show(ui, app));
-    }
+    Panel::left("library")
+        .frame(frame())
+        .default_size(280.0)
+        .show(ui, |ui| library::show(ui, app));
     stage::show(ui, app);
     drag_and_drop(&ctx, app);
 }

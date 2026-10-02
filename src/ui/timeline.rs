@@ -110,8 +110,13 @@ fn track(ui: &mut Ui, app: &mut App) {
             *(if out { &mut it.fade_out } else { &mut it.fade_in }) = secs;
         }
     }
-    if let Some((id, front, t)) = trimmed {
+    if let Some((id, front, mut t)) = trimmed {
         app.pause_for_edit();
+        if app.magnet {
+            // The edge pulls to the start or end of anything on any track, so lanes line up above one another.
+            let others: Vec<f64> = edges.iter().filter(|(o, _)| *o != id).map(|(_, e)| *e).collect();
+            t = items::snap(t, 0.0, &others, app.zoom);
+        }
         app.project.trim_edge(id, front, t);
     }
     if let Some((id, ti)) = picked {

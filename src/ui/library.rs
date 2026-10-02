@@ -1,6 +1,6 @@
 //! The library: every imported file with a thumbnail, how often it is used, and quick actions.
 
-use super::sounds_panel;
+use super::{sounds_panel, text_tab};
 use crate::app::App;
 use crate::drop::LibraryDrag;
 use crate::patterns;
@@ -22,17 +22,22 @@ fn duration(m: &MediaRef) -> String {
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     patterns::dots(&ui.painter_at(ui.max_rect()), ui.max_rect());
-    let list = [(LibraryTab::Files, "Files"), (LibraryTab::Sounds, "Sounds")];
+    let list = [
+        (LibraryTab::Files, "Media"),
+        (LibraryTab::Sounds, "Sounds"),
+        (LibraryTab::Text, "Text"),
+    ];
     tabs(ui, &mut app.library_tab, &list);
     ui.add_space(6.0);
     match app.library_tab {
         LibraryTab::Files => files(ui, app),
-        _ => sounds_panel::show(ui, app),
+        LibraryTab::Sounds => sounds_panel::show(ui, app),
+        LibraryTab::Text => text_tab::show(ui, app),
     }
 }
 
 fn files(ui: &mut Ui, app: &mut App) {
-    section(ui, &format!("Library ({})", app.project.media.len()));
+    section(ui, &format!("Media ({})", app.project.media.len()));
     if app.project.media.is_empty() {
         return;
     }

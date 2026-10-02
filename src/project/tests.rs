@@ -36,7 +36,7 @@ fn split_keeps_total_and_rejects_edges() {
 fn place_moves_between_tracks_and_sorts() {
     let (mut p, a, b) = project();
     p.tracks.push(Default::default());
-    p.place(b, 1, 1.0);
+    p.place(b, 1, 6.0);
     assert_eq!(p.find(b), Some((1, 0)));
     p.place(a, 1, 0.5);
     assert_eq!(p.tracks[1].items[0].id, a); // sorted by start time
@@ -184,7 +184,8 @@ fn a_nearby_playhead_lands_on_the_seam_and_a_far_one_stays_put() {
 
 #[test]
 fn trimmed_video_grows_back_to_its_source_but_no_further() {
-    let (mut p, a, _) = project(); // a: video at 0, 4 s long
+    let (mut p, a, b) = project(); // a: video at 0, 4 s long
+    p.remove(b); // no neighbour in the way
     let src = p.get(a).unwrap().src_len;
     p.get_mut(a).unwrap().start = 1.0;
     p.get_mut(a).unwrap().at = 2.0;

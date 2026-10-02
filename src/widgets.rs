@@ -134,22 +134,6 @@ pub fn caps(ui: &mut Ui, text: &str) {
     );
 }
 
-/// One line of a menu: full width, left-aligned, inverting on hover.
-pub fn menu_item(ui: &mut Ui, text: &str) -> Response {
-    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width().max(180.0), 34.0), Sense::CLICK);
-    let hot = resp.hovered();
-    let p = ui.painter();
-    p.rect_filled(rect, 0.0, if hot { BLACK } else { WHITE });
-    p.text(
-        rect.left_center() + vec2(12.0, 0.0),
-        Align2::LEFT_CENTER,
-        text.to_uppercase(),
-        bold(12.0),
-        if hot { WHITE } else { BLACK },
-    );
-    resp.on_hover_cursor(CursorIcon::PointingHand)
-}
-
 /// A small tag-like button, for quick suggestions.
 pub fn chip(ui: &mut Ui, text: &str) -> Response {
     let label = text.to_uppercase();

@@ -11,7 +11,8 @@ A video editor for TikTok, Reels and Shorts. Native macOS app, written in Rust. 
 - Videos, images and sounds on any number of tracks, all by drag and drop
 - 9:16, 4:5 and 16:9
 - Move, scale and rotate on the preview, with alignment lines and safe zones
-- Text in any installed font
+- Text in any installed font, and lower thirds (Bauchbinde): a name bar that slides in
+- Clips on one track never overlap; edges snap to the clips on other tracks
 - Zoom, shake, looks and transitions between clips (whip, flash, glitch, spin, wipe and more)
 - Captions from local Whisper, burned in
 - Voice clean-up, volume, fades
@@ -31,7 +32,7 @@ cargo run --release -- clip.mp4 other.mov            # with files
 cargo run --release -- project.gcut                  # with a project
 ```
 
-Keys: `Space` play/pause, `S` split, `Delete` remove, `Cmd+Z` undo, `Shift+Cmd+Z` redo, `Cmd+C` `Cmd+X` `Cmd+V` copy, cut, paste, `F` full screen preview, `Cmd+N` new project (asks first if there is unsaved work), `Cmd+S` save, `Cmd+O` open, `Cmd+plus` `Cmd+minus` zoom the tracks, `Cmd+0` fit, `Alt` while dragging to skip snapping. Pinch or Cmd+scroll zooms the tracks; the mouse wheel over the preview resizes the selected element; drag the bar on top of the timeline to make it taller.
+Keys: `Space` play/pause, `S` split, `Delete` remove, `Cmd+Z` undo, `Shift+Cmd+Z` redo, `Cmd+C` `Cmd+X` `Cmd+V` copy, cut, paste, `F` full screen preview, `Cmd+N` new project (asks first if there is unsaved work; also the + at the top right, the floppy next to it saves), `Cmd+S` save, `Cmd+O` open, `Cmd+plus` `Cmd+minus` zoom the tracks, `Cmd+0` fit, `Alt` while dragging to skip snapping. Pinch or Cmd+scroll zooms the tracks; the mouse wheel over the preview resizes the selected element; drag the bar on top of the timeline to make it taller.
 
 ## Develop
 

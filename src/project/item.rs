@@ -51,6 +51,9 @@ pub struct Item {
     pub font_size: f32, // px on a 1080-wide frame
     pub color: [u8; 3],
     pub outline: bool,
+    /// A solid coloured bar behind the text (a lower third).
+    #[serde(default)]
+    pub bar: bool,
     /// Audio: gain (1.0 = unchanged) and one-click voice clean-up.
     pub volume: f32,
     pub enhance: bool,
@@ -106,6 +109,7 @@ impl Item {
             font_size: 96.0,
             color: [255, 255, 255],
             outline: true,
+            bar: false,
             volume: 1.0,
             enhance: false,
             fade_in: 0.0,
