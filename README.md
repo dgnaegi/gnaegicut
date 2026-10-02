@@ -11,7 +11,7 @@ A video editor for TikTok, Reels and Shorts. Native macOS app, written in Rust. 
 - Videos, images and sounds on any number of tracks, all by drag and drop
 - 9:16, 4:5 and 16:9
 - Move, scale and rotate on the preview, with alignment lines and safe zones
-- Text in any installed font, and lower thirds (Bauchbinde): a name bar that slides in
+- Text in any installed font, and lower thirds (Bauchbinde): white name boxes that fade in
 - Clips on one track never overlap; edges snap to the clips on other tracks
 - Zoom, shake, looks and transitions between clips (whip, flash, glitch, spin, wipe and more)
 - Captions from local Whisper, burned in

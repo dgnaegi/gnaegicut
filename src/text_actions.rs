@@ -17,14 +17,14 @@ impl App {
         self.add_text_item(|_| {});
     }
 
-    /// Adds a lower third: two lines (name, role) on a coloured bar low in the picture, wiping in and fading out.
+    /// Adds a lower third: two lines (name, role) on white boxes low in the picture, wiping in and fading out.
     pub fn add_lower_third(&mut self) {
         self.add_text_item(|item| {
             item.text = "Name\nRole or place".into();
             (item.bar, item.outline, item.font_size, item.color) = (true, false, 88.0, [0, 0, 0]);
             (item.y, item.end) = (0.72, 4.0);
             item.font = LOWER_THIRD_FONT.into(); // the AL poster font; machines without it use the bundled one
-            (item.transition, item.fade_in, item.fade_out) = (Transition::WipeRight, 0.35, 0.25);
+            (item.transition, item.fade_in, item.fade_out) = (Transition::WipeRight, 0.5, 0.25);
         });
     }
 

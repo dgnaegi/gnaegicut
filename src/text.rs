@@ -23,10 +23,16 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool,
     };
     let metrics = font.horizontal_line_metrics(size);
     let (ascent, line_h) = metrics.map_or((size * 0.8, size * 1.2), |m| (m.ascent, m.new_line_size));
-    let width = |l: &str| l.chars().map(|c| font.metrics(c, size).advance_width).sum::<f32>();
+    let plan = text_bar::Plan::new(size);
+    let track = if bar { plan.tracking } else { 0.0 };
+    let width = |l: &str| {
+        l.chars()
+            .map(|c| font.metrics(c, size).advance_width + track)
+            .sum::<f32>()
+            - track
+    };
     let widest = lines.iter().map(|l| width(l)).fold(1.0, f32::max);
     let ring = if outline { (size / 14.0).max(1.0) } else { 0.0 };
-    let plan = text_bar::Plan::new(size);
     let pad = (size / 8.0 + ring * 2.0).ceil();
     let (w, h) = if bar {
         plan.size(widest, lines.len(), line_h)
@@ -72,7 +78,7 @@ pub fn render(font: &Font, text: &str, size: f32, color: [u8; 3], outline: bool,
                 }
             }
             stamp(&mut fill, &bitmap, m.width.max(1), left, top);
-            x += m.advance_width;
+            x += m.advance_width + track;
         }
     }
     let rgba = if bar {

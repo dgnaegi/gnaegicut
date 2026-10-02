@@ -49,7 +49,9 @@ pub fn run(cmd: &mut Command) -> Result<(), String> {
 
 /// Bundled assets live next to the source tree.
 pub fn asset(rel: &str) -> String {
-    let bundled = std::env::current_exe().ok().and_then(|exe| Some(exe.parent()?.parent()?.join("Resources").join(rel)));
+    let bundled = std::env::current_exe()
+        .ok()
+        .and_then(|exe| Some(exe.parent()?.parent()?.join("Resources").join(rel)));
     match bundled {
         Some(p) if p.exists() => p.to_string_lossy().into_owned(),
         _ => format!("{}/{rel}", env!("CARGO_MANIFEST_DIR")),
