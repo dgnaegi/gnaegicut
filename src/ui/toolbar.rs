@@ -2,8 +2,28 @@ use crate::app::App;
 use crate::logo;
 use crate::project::Aspect;
 use crate::theme::black;
-use crate::widgets::{Kind, button, segmented};
-use eframe::egui::{Align, Layout, RichText, Sense, Ui, vec2};
+use crate::widgets::{Kind, button, menu_item, segmented};
+use eframe::egui::{Align, Layout, Popup, RichText, Sense, Ui, vec2};
+
+/// The single add button: opens a small menu of what can be added.
+fn add_menu(ui: &mut Ui, app: &mut App) {
+    let plus = button(ui, "+", Kind::Plain);
+    Popup::menu(&plus).show(|ui| {
+        ui.set_min_width(200.0);
+        if menu_item(ui, "Video or image…").clicked() {
+            app.import();
+            ui.close();
+        }
+        if menu_item(ui, "Sound or music…").clicked() {
+            app.import_sound();
+            ui.close();
+        }
+        if menu_item(ui, "Text").clicked() {
+            app.add_text();
+            ui.close();
+        }
+    });
+}
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     ui.horizontal(|ui| {
@@ -23,12 +43,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
         if button(ui, "Library", library).clicked() {
             app.library_open = !app.library_open;
         }
-        if button(ui, "+ Media", Kind::Plain).clicked() {
-            app.import();
-        }
-        if button(ui, "+ Text", Kind::Plain).clicked() {
-            app.add_text();
-        }
+        add_menu(ui, app);
         ui.add_space(16.0);
         let aspects: Vec<_> = Aspect::ALL.iter().map(|a| (*a, a.label())).collect();
         segmented(ui, &mut app.project.aspect, &aspects);

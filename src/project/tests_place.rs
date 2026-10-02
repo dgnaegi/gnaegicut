@@ -59,3 +59,24 @@ fn negative_times_clamp_and_an_empty_batch_is_harmless() {
     let id = p.place_batch(vec![clip(1.0)], 0, -2.0, false)[0];
     assert_eq!(p.get(id).unwrap().at, 0.0);
 }
+
+#[test]
+fn a_pasted_copy_keeps_its_look_but_not_its_transition_and_avoids_busy_tracks() {
+    let mut p = Project::default();
+    let first = p.place_batch(vec![clip(4.0)], 0, 0.0, false)[0];
+    let mut original = clip(2.0);
+    (original.scale, original.rotation, original.volume) = (0.7, 12.0, 0.5);
+    original.join = Some(Join {
+        effect: JoinEffect::Flash,
+        len: 0.3,
+    });
+    let copy = p.paste_item(original, 0, 1.0); // track 0 is busy 0..4
+    let pasted = p.get(copy).unwrap();
+    assert_eq!(p.find(copy).map(|(t, _)| t), Some(1), "moved up to a free track");
+    assert!((pasted.at - 1.0).abs() < 1e-9);
+    assert!((pasted.scale - 0.7).abs() < 1e-6 && pasted.rotation == 12.0 && pasted.volume == 0.5);
+    assert!(pasted.join.is_none(), "the transition belonged to the old neighbour");
+    assert_ne!(copy, first, "a new item, not the same one");
+    let again = p.paste_item(p.get(copy).unwrap().clone(), 0, 5.0);
+    assert_eq!(p.find(again).map(|(t, _)| t), Some(0), "track 0 is free again from 4 s");
+}

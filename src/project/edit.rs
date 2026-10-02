@@ -32,6 +32,26 @@ impl Project {
         removable
     }
 
+    /// When the last picture ends, which is usually where the music should end too.
+    pub fn visual_end(&self) -> f64 {
+        self.items()
+            .filter(|i| i.kind.is_visual())
+            .fold(0.0, |end, i| end.max(i.end_at()))
+    }
+
+    /// Cuts a sound where the picture ends and fades it out over `fade` seconds. A sound that is already
+    /// shorter keeps its length and just fades at its own end. Returns false if it starts after the picture ends.
+    pub fn fade_out_at_end(&mut self, id: u64, fade: f32) -> bool {
+        let end = self.visual_end();
+        let Some(item) = self.get_mut(id) else { return false };
+        if item.at + 0.2 >= end {
+            return false;
+        }
+        item.end = (item.start + (end - item.at)).clamp(item.start + 0.2, item.src_len.max(item.start + 0.2));
+        item.fade_out = fade.min(item.len() as f32).max(0.0);
+        true
+    }
+
     /// Moves an item to `track` at timeline position `at` (clamped to >= 0).
     pub fn place(&mut self, id: u64, track: usize, at: f64) {
         let Some((ti, ii)) = self.find(id) else { return };

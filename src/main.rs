@@ -1,8 +1,11 @@
 mod actions;
 mod app;
 mod app_types;
+mod audio_out;
+mod clipboard;
 mod drop;
 mod fonts;
+mod history;
 mod logo;
 mod media;
 mod patterns;
@@ -20,6 +23,7 @@ mod text;
 mod theme;
 mod thumbs;
 mod ui;
+mod waveforms;
 mod widgets;
 
 use eframe::egui;
@@ -45,6 +49,7 @@ fn main() -> eframe::Result {
         Box::new(|cc| {
             theme::apply(&cc.egui_ctx);
             let mut app = app::App::new(cc.egui_ctx.clone());
+            app.open_audio();
             let files: Vec<std::path::PathBuf> = std::env::args_os().skip(1).map(Into::into).collect();
             if let Some(project) = files
                 .iter()
@@ -54,9 +59,7 @@ fn main() -> eframe::Result {
             } else if files.is_empty() {
                 app.restore_autosave();
             } else {
-                app.stack_drops = false; // files named on the command line form a montage, one after another
-                app.add_files(&files, None);
-                app.stack_drops = true;
+                app.add_files_in_sequence(&files); // files named on the command line form a montage
             }
             Ok(Box::new(app))
         }),

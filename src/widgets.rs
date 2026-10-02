@@ -14,7 +14,7 @@ pub fn button(ui: &mut Ui, text: &str, kind: Kind) -> Response {
     let label = text.to_uppercase();
     let font = bold(12.0);
     let width = ui.painter().layout_no_wrap(label.clone(), font.clone(), BLACK).size().x;
-    let (rect, resp) = ui.allocate_exact_size(vec2(width + 28.0, 36.0), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(vec2(width + 28.0, 36.0), Sense::CLICK);
     let hot = resp.hovered() || resp.is_pointer_button_down_on();
     let (bg, fg): (Color32, Color32) = match (kind, hot) {
         (Kind::Plain, false) => (WHITE, BLACK),
@@ -90,7 +90,7 @@ pub fn tabs<T: PartialEq + Copy>(ui: &mut Ui, current: &mut T, options: &[(T, &s
         for (value, label) in options {
             let label = label.to_uppercase();
             let width = ui.painter().layout_no_wrap(label.clone(), bold(12.0), BLACK).size().x;
-            let (rect, resp) = ui.allocate_exact_size(vec2(width + 20.0, 34.0), Sense::click());
+            let (rect, resp) = ui.allocate_exact_size(vec2(width + 20.0, 34.0), Sense::CLICK);
             let active = current == value;
             let ink = if active {
                 BLACK
@@ -134,11 +134,27 @@ pub fn caps(ui: &mut Ui, text: &str) {
     );
 }
 
+/// One line of a menu: full width, left-aligned, inverting on hover.
+pub fn menu_item(ui: &mut Ui, text: &str) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width().max(180.0), 34.0), Sense::CLICK);
+    let hot = resp.hovered();
+    let p = ui.painter();
+    p.rect_filled(rect, 0.0, if hot { BLACK } else { WHITE });
+    p.text(
+        rect.left_center() + vec2(12.0, 0.0),
+        Align2::LEFT_CENTER,
+        text.to_uppercase(),
+        bold(12.0),
+        if hot { WHITE } else { BLACK },
+    );
+    resp.on_hover_cursor(CursorIcon::PointingHand)
+}
+
 /// A small tag-like button, for quick suggestions.
 pub fn chip(ui: &mut Ui, text: &str) -> Response {
     let label = text.to_uppercase();
     let width = ui.painter().layout_no_wrap(label.clone(), bold(10.0), BLACK).size().x;
-    let (rect, resp) = ui.allocate_exact_size(vec2(width + 16.0, 24.0), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(vec2(width + 16.0, 24.0), Sense::CLICK);
     let (bg, fg) = if resp.hovered() {
         (ACCENT, WHITE)
     } else {

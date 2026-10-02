@@ -4,6 +4,7 @@ mod aspect;
 mod caption;
 mod edit;
 mod item;
+mod item_audio;
 mod item_fx;
 mod item_geometry;
 mod item_motion;
@@ -16,6 +17,8 @@ mod place;
 mod tests;
 #[cfg(test)]
 mod tests_join;
+#[cfg(test)]
+mod tests_music;
 #[cfg(test)]
 mod tests_place;
 
@@ -74,6 +77,28 @@ impl Project {
     /// All items, bottom layer first (the order they are composited in).
     pub fn items(&self) -> impl Iterator<Item = &Item> {
         self.tracks.iter().flat_map(|t| t.items.iter())
+    }
+
+    /// The times where something starts or ends: 0, every item's start and end (so the seam between two clips is one
+    /// entry) and every caption's start and end. Sorted, without duplicates. The playhead and dragged items snap to these.
+    pub fn edges(&self) -> Vec<f64> {
+        let items = self.items().flat_map(|i| [i.at, i.end_at()]);
+        let captions = self.captions.iter().flat_map(|c| [c.start, c.end]);
+        let mut all: Vec<f64> = std::iter::once(0.0).chain(items).chain(captions).collect();
+        all.sort_by(f64::total_cmp);
+        all.dedup_by(|a, b| (*a - *b).abs() < 1e-6);
+        all
+    }
+
+    /// All caption texts in order, one caption per line: what to copy into a post or a description.
+    pub fn transcript(&self) -> String {
+        let lines: Vec<&str> = self
+            .captions
+            .iter()
+            .map(|c| c.text.trim())
+            .filter(|t| !t.is_empty())
+            .collect();
+        lines.join("\n")
     }
 
     pub fn is_empty(&self) -> bool {
@@ -138,7 +163,15 @@ impl Project {
         let mut h = DefaultHasher::new();
         self.aspect.hash(&mut h);
         let c = &self.caption_layout;
-        (c.x.to_bits(), c.y.to_bits(), c.size.to_bits(), c.bold, &c.family).hash(&mut h);
+        (
+            c.x.to_bits(),
+            c.y.to_bits(),
+            c.size.to_bits(),
+            c.bold,
+            c.auto_y,
+            &c.family,
+        )
+            .hash(&mut h);
         (self.caption_style as u8, self.captions.len()).hash(&mut h);
         for cap in &self.captions {
             (cap.start.to_bits(), cap.end.to_bits(), &cap.text).hash(&mut h);

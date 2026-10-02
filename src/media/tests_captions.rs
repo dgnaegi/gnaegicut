@@ -2,7 +2,7 @@
 
 use super::frame::frame;
 use super::testutil::video;
-use crate::project::{Caption, Project};
+use crate::project::{Aspect, Caption, Project};
 use std::process::{Command, Stdio};
 
 const SIZE: (u32, u32) = (540, 960);
@@ -31,35 +31,26 @@ fn is_pink(c: [u8; 3]) -> bool {
     c[0] > 215 && c[1] < 70 && (80..160).contains(&c[2])
 }
 
-fn is_black(c: [u8; 3]) -> bool {
-    c.iter().all(|v| *v < 40)
-}
-
 #[test]
 fn default_captions_are_ff1975_with_black_all_around() {
     let px = pixels(&captioned());
-    let band = (SIZE.1 as f32 * 0.70) as u32..(SIZE.1 as f32 * 0.86) as u32;
+    let band = (SIZE.1 as f32 * 0.55) as u32..(SIZE.1 as f32 * 0.80) as u32;
     let pink: Vec<(u32, u32)> = band
         .flat_map(|y| (0..SIZE.0).map(move |x| (x, y)))
         .filter(|&(x, y)| is_pink(at(&px, x, y)))
         .collect();
     assert!(pink.len() > 80, "pink text expected, found {} pixels", pink.len());
 
-    // Shadow all around: from a pink pixel, black is within a few pixels in every direction.
-    let reach = 7;
-    let (x, y) = pink[pink.len() / 2];
-    let near_black = |dx: i32, dy: i32| {
-        (1..=reach).any(|d| is_black(at(&px, (x as i32 + dx * d) as u32, (y as i32 + dy * d) as u32)))
+    // Shadow all around: stepping outward from the text's extreme pixels in all four directions, black appears.
+    let dark = |p: [u8; 3]| p.iter().all(|v| *v < 70);
+    let outward = |(x, y): (u32, u32), (dx, dy): (i32, i32)| {
+        (1..=7).any(|d| dark(at(&px, (x as i32 + dx * d) as u32, (y as i32 + dy * d) as u32)))
     };
-    // Pick a pixel on the edge of the text so the ray actually leaves the letter.
-    let edge = pink
-        .iter()
-        .copied()
-        .find(|&(x, y)| is_black(at(&px, x - 3, y)) || is_black(at(&px, x + 3, y)))
-        .expect("an edge pixel");
-    let _ = (near_black, edge);
-    let dark = (0..SIZE.0).filter(|&x| is_black(at(&px, x, pink[0].1 - 4))).count();
-    assert!(dark > 0, "black shadow above the text");
+    let extreme = |key: fn(&(u32, u32)) -> i64| *pink.iter().max_by_key(|p| key(p)).unwrap();
+    assert!(outward(extreme(|p| -(p.0 as i64)), (-1, 0)), "shadow to the left");
+    assert!(outward(extreme(|p| p.0 as i64), (1, 0)), "shadow to the right");
+    assert!(outward(extreme(|p| -(p.1 as i64)), (0, -1)), "shadow above");
+    assert!(outward(extreme(|p| p.1 as i64), (0, 1)), "shadow below");
 }
 
 #[test]
@@ -70,6 +61,60 @@ fn the_background_stays_untouched_away_from_the_caption() {
         grey.iter().all(|v| (118..138).contains(v)),
         "plain grey video far from the text: {grey:?}"
     );
+}
+
+/// The smallest rectangle (as fractions of the frame) holding every pink caption pixel.
+fn text_bounds(px: &[u8], (w, h): (u32, u32)) -> Option<[f32; 4]> {
+    let mut b = [f32::MAX, f32::MAX, f32::MIN, f32::MIN];
+    for y in 0..h {
+        for x in 0..w {
+            let i = ((y * w + x) * 4) as usize;
+            if is_pink([px[i], px[i + 1], px[i + 2]]) {
+                let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
+                b = [b[0].min(fx), b[1].min(fy), b[2].max(fx), b[3].max(fy)];
+            }
+        }
+    }
+    (b[0] <= b[2]).then_some(b)
+}
+
+#[test]
+fn captions_stay_inside_the_safe_zone_in_every_format() {
+    for aspect in Aspect::ALL {
+        let size = crate::preview::size(aspect);
+        let mut p = Project::default();
+        p.aspect = aspect;
+        p.add(
+            0,
+            video(
+                &format!("safe_{}", aspect.label().replace(':', "x")),
+                "0x808080",
+                size,
+                2,
+                false,
+            ),
+        );
+        // As long as one line of transcript gets (whisper breaks at 28 characters); it wraps to two lines.
+        p.captions = vec![Caption {
+            start: 0.0,
+            end: 2.0,
+            text: "Once upon a time in a forest".into(),
+        }];
+        let px = frame(&p, 1.0, size.0, size.1).unwrap();
+        let [x0, y0, x1, y1] = text_bounds(&px, size).expect("pink text");
+        let [left, top, right, bottom] = aspect.safe_margins();
+        let slack = 0.01; // the soft shadow and rounding
+        assert!(
+            x0 >= left - slack && x1 <= 1.0 - right + slack,
+            "{}: sideways {x0}..{x1}",
+            aspect.label()
+        );
+        assert!(
+            y0 >= top - slack && y1 <= 1.0 - bottom + slack,
+            "{}: height {y0}..{y1}",
+            aspect.label()
+        );
+    }
 }
 
 /// Writes the frame as a PNG for a human to look at: `GC_DUMP=/tmp/pop.png cargo test -- --ignored`.

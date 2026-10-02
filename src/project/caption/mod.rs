@@ -1,5 +1,9 @@
 //! Subtitle data and the styles shared by the preview and the export.
 
+mod edit;
+mod split;
+
+use super::Aspect;
 use serde::{Deserialize, Serialize};
 
 /// A subtitle line. Times are on the timeline, not in a source file.
@@ -88,16 +92,58 @@ pub struct CaptionLayout {
     pub family: String,
     pub bold: bool,
     pub size: f32, // 1.0 = default size
+    /// While true the caption rests at the lower edge of the platform safe zone of the current format and follows it
+    /// when the format changes. Moving the caption by hand turns this off.
+    #[serde(default = "yes")]
+    pub auto_y: bool,
+}
+
+/// Where captions rest by default, as a fraction of the frame height.
+const AUTO_HEIGHT: f32 = 0.6;
+
+fn yes() -> bool {
+    true
+}
+
+impl CaptionLayout {
+    /// The caption's centre as fractions of the frame. Automatically: 60% of the way down, pulled back inside the
+    /// platform safe zone if a large font or a second line would otherwise reach the buttons and the app's own caption
+    /// (see `Aspect::safe_margins`).
+    pub fn position(&self, aspect: Aspect) -> (f32, f32) {
+        if !self.auto_y {
+            return (self.x, self.y);
+        }
+        let (w, h) = aspect.size();
+        let line = w.min(h) as f32 / 15.0 * self.size; // the caption font size in pixels (see media::ass)
+        let half_block = 1.25 * line / h as f32; // half the height of a two-line caption
+        let [_, top, _, bottom] = aspect.safe_margins();
+        let (lowest, highest) = (top + half_block, (1.0 - bottom - half_block).max(top + half_block));
+        (self.x, AUTO_HEIGHT.clamp(lowest, highest))
+    }
+
+    /// Puts the caption where the user dragged it.
+    pub fn place(&mut self, x: f32, y: f32) {
+        (self.x, self.y, self.auto_y) = (x, y, false);
+    }
+
+    /// Back to the automatic position.
+    pub fn reset_position(&mut self) {
+        (self.x, self.auto_y) = (0.5, true);
+    }
 }
 
 impl Default for CaptionLayout {
     fn default() -> Self {
         Self {
             x: 0.5,
-            y: 0.78,
+            y: 0.7,
             family: "AL Unica77 Black".into(), // libass picks the Black cut by this name; "AL Unica77" alone gives Medium
             bold: true,
             size: 1.0,
+            auto_y: true,
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

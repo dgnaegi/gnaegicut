@@ -12,6 +12,8 @@ pub enum Event {
     Fonts(Box<Fonts>),
     /// A library thumbnail: source path and RGBA pixels.
     Thumb(String, Vec<u8>, u32, u32),
+    /// Loudness peaks of a file's sound, for the timeline.
+    Waveform(String, Vec<f32>),
     SoundResults(crate::sounds::Source, Result<Vec<Sound>, String>),
     /// A sound is downloaded and decoded; play it.
     SoundPcm(String, Vec<f32>),
@@ -25,6 +27,8 @@ pub enum Selection {
     None,
     Item(u64),
     Captions,
+    /// A lane picked by clicking its number; Backspace or Delete removes it if it is empty.
+    Track(usize),
 }
 
 /// Tabs of the inspector. Not every tab exists for every selection.

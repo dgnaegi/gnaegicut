@@ -64,3 +64,18 @@ fn a_project_of_only_sound_exports_as_black_video_with_audio() {
     let got = probe(&out).unwrap();
     assert!(got.has_audio && (got.src_len - 2.0).abs() < 0.3);
 }
+
+#[test]
+fn a_music_fade_out_ramps_the_sound_down_to_nothing() {
+    let mut p = Project::default();
+    let mut m = sound("fading", 4);
+    m.fade_out = 2.0;
+    p.add(0, m);
+    let pcm = stream::audio(&p).unwrap();
+    assert!(peak(&pcm, 0.3, 1.5) > 0.05, "full level before the fade");
+    assert!(
+        peak(&pcm, 2.9, 3.2) < peak(&pcm, 2.0, 2.2) * 0.7,
+        "quieter half way through the fade"
+    );
+    assert!(peak(&pcm, 3.9, 3.99) < 0.03, "silent at the end");
+}

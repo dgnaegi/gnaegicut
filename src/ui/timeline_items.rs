@@ -6,16 +6,28 @@ use eframe::egui::{Align2, Color32, CursorIcon, Id, Rect, Response, Sense, Strok
 
 pub const GUTTER: f32 = 56.0;
 pub const RULER: f32 = 22.0;
-pub const LANE: f32 = 44.0;
+pub const MIN_LANE: f32 = 44.0; // lane height when there is little room
+pub const MAX_LANE: f32 = 140.0; // and when there is plenty
 pub const GAP: f32 = 4.0;
 pub const ADD_ROW: f32 = 26.0; // the "+ new track" bar above the top lane
 const SNAP_PX: f32 = 8.0;
+
+/// Everything in the panel that is not a lane: grip, controls, ruler, add-track bar, captions lane, gaps, margins.
+const FIXED_HEIGHT: f32 = 160.0;
+
+/// The lane height for a timeline panel of `panel_h` pixels holding `lanes` lanes: as tall as the room allows,
+/// within limits (past the lower one the tracks scroll instead of shrinking further).
+pub fn lane_height(panel_h: f32, lanes: usize) -> f32 {
+    ((panel_h - FIXED_HEIGHT) / lanes.max(1) as f32 - GAP).clamp(MIN_LANE, MAX_LANE)
+}
 
 #[derive(Clone, Copy)]
 pub struct Layout {
     pub rect: Rect,
     pub zoom: f32,
     pub lanes: usize,
+    /// Height of one lane. It grows with the panel, so a taller timeline means bigger tracks.
+    pub lane: f32,
 }
 
 impl Layout {
@@ -29,7 +41,7 @@ impl Layout {
 
     /// Higher tracks are drawn higher up, like layers.
     pub fn lane_top(&self, track: usize) -> f32 {
-        self.lanes_top() + (self.lanes - 1 - track) as f32 * (LANE + GAP)
+        self.lanes_top() + (self.lanes - 1 - track) as f32 * (self.lane + GAP)
     }
 
     /// Top of the highest lane: below the ruler and the add-track bar.
@@ -38,22 +50,22 @@ impl Layout {
     }
 
     pub fn track_at(&self, y: f32) -> usize {
-        let row = ((y - self.lanes_top()) / (LANE + GAP)).floor().max(0.0) as usize;
+        let row = ((y - self.lanes_top()) / (self.lane + GAP)).floor().max(0.0) as usize;
         (self.lanes - 1).saturating_sub(row.min(self.lanes - 1))
     }
 
     pub fn captions_top(&self) -> f32 {
-        self.lanes_top() + self.lanes as f32 * (LANE + GAP)
+        self.lanes_top() + self.lanes as f32 * (self.lane + GAP)
     }
 
     pub fn item_rect(&self, track: usize, item: &Item) -> Rect {
         let top = self.lane_top(track);
-        Rect::from_min_max(pos2(self.x(item.at), top), pos2(self.x(item.end_at()), top + LANE))
+        Rect::from_min_max(pos2(self.x(item.at), top), pos2(self.x(item.end_at()), top + self.lane))
     }
 }
 
 /// Paints one item block and returns its click/drag response.
-pub fn show(ui: &mut Ui, lay: &Layout, track: usize, item: &Item, selected: bool) -> Response {
+pub fn show(ui: &mut Ui, lay: &Layout, track: usize, item: &Item, selected: bool, wave: Option<&[f32]>) -> Response {
     let rect = lay.item_rect(track, item);
     let resp = ui.interact(rect, Id::new(("item", item.id)), Sense::click_and_drag());
     let (fill, ink): (Color32, Color32) = match (selected, item.kind) {
@@ -77,6 +89,9 @@ pub fn show(ui: &mut Ui, lay: &Layout, track: usize, item: &Item, selected: bool
         Kind::Text => "TXT ",
         Kind::Audio => "♪ ",
     };
+    if let Some(peaks) = wave.filter(|_| item.has_audio) {
+        super::timeline_audio::paint_wave(ui, lay, rect, item, peaks, ink);
+    }
     let label = format!("{tag}{}", item.name.to_uppercase());
     if item.kind == Kind::Audio {
         p.rect_filled(
@@ -154,5 +169,32 @@ mod tests {
     #[test]
     fn reach_shrinks_when_zoomed_in() {
         assert_eq!(snap(4.05, 2.0, &[4.0], 200.0), 4.05, "8px at 200px/s is only 0.04s");
+    }
+}
+
+#[cfg(test)]
+mod lane_tests {
+    use super::*;
+    #[test]
+    fn lanes_grow_with_the_panel_and_stay_within_limits() {
+        assert_eq!(
+            lane_height(200.0, 3),
+            MIN_LANE,
+            "a small panel keeps lanes at their minimum"
+        );
+        assert!(
+            lane_height(500.0, 2) > lane_height(300.0, 2),
+            "a taller panel gives taller lanes"
+        );
+        assert_eq!(lane_height(2000.0, 1), MAX_LANE, "but not absurdly tall");
+        assert!(
+            lane_height(500.0, 4) < lane_height(500.0, 2),
+            "more lanes share the room"
+        );
+        assert_eq!(
+            lane_height(500.0, 0),
+            lane_height(500.0, 1),
+            "no lanes yet is not a division by zero"
+        );
     }
 }

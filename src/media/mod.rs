@@ -21,6 +21,7 @@ mod tests_join;
 mod tests_motion;
 #[cfg(test)]
 pub mod testutil;
+pub mod waveform;
 pub mod whisper;
 
 use std::process::Command;

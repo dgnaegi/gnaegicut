@@ -1,6 +1,6 @@
 //! Markers on the timeline where two clips meet: a "+" to add a transition, or the transition itself.
 
-use super::timeline_items::{LANE, Layout};
+use super::timeline_items::Layout;
 use crate::app::{App, Selection, Tab};
 use crate::project::{Join, JoinEffect};
 use crate::theme::{ACCENT, BLACK, BORDER, WHITE, bold};
@@ -34,17 +34,17 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
                     let width = (x1 - x0).max(MIN_WIDTH);
                     let left = if overlaps { x0 } else { x0 - width / 2.0 };
                     (
-                        Rect::from_min_size(pos2(left, top), vec2(width, LANE)),
+                        Rect::from_min_size(pos2(left, top), vec2(width, lay.lane)),
                         Some(j.effect.label()),
                     )
                 }
                 None => (
-                    Rect::from_center_size(pos2(joint, top + LANE / 2.0), vec2(PLUS, PLUS)),
+                    Rect::from_center_size(pos2(joint, top + lay.lane / 2.0), vec2(PLUS, PLUS)),
                     None,
                 ),
             };
             let resp = ui
-                .interact(rect, Id::new(("join", b.id)), Sense::click())
+                .interact(rect, Id::new(("join", b.id)), Sense::CLICK)
                 .on_hover_cursor(CursorIcon::PointingHand);
             if resp.clicked() {
                 clicked = Some((b.id, label.is_none()));

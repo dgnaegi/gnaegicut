@@ -5,7 +5,7 @@ use crate::fonts::DEFAULT_FONT;
 use crate::media::{export::export, whisper};
 use crate::player::Player;
 use crate::project::{Item, Kind};
-use crate::{preview, text};
+use crate::text;
 use std::sync::mpsc::Sender;
 
 impl App {
@@ -26,20 +26,28 @@ impl App {
         if self.playhead >= self.project.total() - 0.05 {
             self.playhead = 0.0;
         }
-        let (w, h) = preview::size(self.project.aspect);
-        self.player = Some(Player::start(&self.project, self.playhead, w, h));
+        let (w, h) = self.preview_size();
+        self.player = Some(Player::start(&self.project, self.playhead, w, h, self.mixer()));
     }
 
+    /// Pick videos and images and place them one after another at the end of the active track.
     pub fn import(&mut self) {
         let exts: Vec<_> = crate::media::probe::VIDEO_EXTS
             .iter()
             .chain(&crate::media::probe::IMAGE_EXTS)
             .collect();
-        if let Some(files) = rfd::FileDialog::new()
-            .add_filter("video and images", &exts)
-            .pick_files()
-        {
-            self.add_files(&files, None);
+        self.import_files("video and images", &exts);
+    }
+
+    /// Pick sound or music files.
+    pub fn import_sound(&mut self) {
+        let exts: Vec<_> = crate::media::probe::AUDIO_EXTS.iter().collect();
+        self.import_files("sound", &exts);
+    }
+
+    fn import_files(&mut self, label: &str, exts: &[&&str]) {
+        if let Some(files) = rfd::FileDialog::new().add_filter(label, exts).pick_files() {
+            self.add_files_in_sequence(&files);
         }
     }
 
@@ -55,6 +63,17 @@ impl App {
     pub fn remove_from_library(&mut self, index: usize) {
         if index < self.project.media.len() {
             self.project.media.remove(index);
+        }
+    }
+
+    /// Removes the picked track when it is empty. A track with clips in it, or the last one, stays.
+    fn delete_track(&mut self, index: usize) {
+        let empty = self.project.tracks.get(index).is_some_and(|t| t.items.is_empty());
+        if !empty {
+            self.status = "Only an empty track can be removed".into();
+        } else if self.project.tracks.len() > 1 {
+            self.remove_track(index);
+            self.select(Selection::None);
         }
     }
 
@@ -95,6 +114,17 @@ impl App {
         }
     }
 
+    /// Scales an item by `grow`. Text changes its font size instead of its picture size, so it stays sharp.
+    pub fn scale_item(&mut self, id: u64, grow: f32) {
+        let Some(it) = self.project.get_mut(id) else { return };
+        if it.kind == Kind::Text {
+            it.font_size = (it.font_size * grow).clamp(12.0, 600.0);
+            self.refresh_text(id);
+        } else {
+            it.scale = (it.scale * grow).clamp(0.05, 8.0);
+        }
+    }
+
     pub fn add_track(&mut self) {
         self.project.tracks.push(Default::default());
         self.track = self.project.tracks.len() - 1;
@@ -109,7 +139,9 @@ impl App {
 
     pub fn delete(&mut self) {
         self.stop();
-        if let Some(id) = self.selected_item() {
+        if let Selection::Track(index) = self.selection {
+            self.delete_track(index);
+        } else if let Some(id) = self.selected_item() {
             if self.magnet {
                 self.project.ripple_remove(id);
             } else {

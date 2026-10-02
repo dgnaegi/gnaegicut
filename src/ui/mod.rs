@@ -2,6 +2,7 @@
 
 mod captions;
 mod font_picker;
+mod fullscreen;
 mod inspector;
 mod item_panel;
 mod library;
@@ -11,19 +12,24 @@ mod stage_edit;
 mod stage_geometry;
 mod stage_guides;
 mod stage_overlay;
+mod stage_scale;
 mod text_panel;
 mod timeline;
+mod timeline_audio;
 mod timeline_gutter;
 mod timeline_items;
 mod timeline_joins;
+mod timeline_parts;
+mod timeline_zoom;
 mod toolbar;
 mod transition_panel;
 
 use crate::app::App;
-use crate::drop::LibraryDrag;
+use crate::drop::{Dragged, take_dragged};
 use crate::theme::{ACCENT, BLACK, BORDER, PAD, WHITE, bold};
 use eframe::egui::{
-    Align2, Context, DragAndDrop, Frame, Id, Key, LayerId, Margin, Order, Panel, Rect, Stroke, StrokeKind, Ui, vec2,
+    Align2, Context, Event, Frame, Id, Key, LayerId, Margin, Modifiers, Order, Panel, Rect, Stroke, StrokeKind, Ui,
+    vec2,
 };
 
 /// White panel with a thick black border: the visible grid.
@@ -34,31 +40,52 @@ fn frame() -> Frame {
         .inner_margin(Margin::same(PAD as i8))
 }
 
+/// Keyboard shortcuts. A key is *consumed* when it is used, so a button that happens to have keyboard focus does
+/// not also react to it (Space on a focused button would otherwise press the button and toggle playback at once).
 fn shortcuts(ctx: &Context, app: &mut App) {
-    if ctx.egui_wants_keyboard_input() {
+    // Only typing in a text field silences the shortcuts. `egui_wants_keyboard_input` is true for *any* focused
+    // widget (a slider you just dragged, a drop-down), which made Space work only now and then.
+    if ctx.text_edit_focused() {
         return;
     }
-    let pressed = |k| ctx.input(|i| i.key_pressed(k));
-    if ctx.input(|i| i.modifiers.command) {
-        // Cmd+S saves, Shift+Cmd+S saves as, Cmd+O opens. Plain S below must not fire for these.
-        if pressed(Key::S) {
-            if ctx.input(|i| i.modifiers.shift) {
-                app.save_as()
-            } else {
-                app.save()
-            }
-        } else if pressed(Key::O) {
-            app.open();
-        }
-        return;
+    let pressed = |mods: Modifiers, key: Key| ctx.input_mut(|i| i.consume_key(mods, key));
+    // On macOS egui reports Cmd+C / Cmd+X / Cmd+V as copy, cut and paste events instead of key presses.
+    let event = |wanted: fn(&Event) -> bool| ctx.input(|i| i.events.iter().any(wanted));
+    if event(|e| matches!(e, Event::Copy)) || pressed(Modifiers::COMMAND, Key::C) {
+        return app.copy_selection();
     }
-    if pressed(Key::Space) {
+    if event(|e| matches!(e, Event::Cut)) || pressed(Modifiers::COMMAND, Key::X) {
+        return app.cut_selection();
+    }
+    if event(|e| matches!(e, Event::Paste(_))) || pressed(Modifiers::COMMAND, Key::V) {
+        return app.paste();
+    }
+    // The most specific first: Shift+Cmd+Z before Cmd+Z, Shift+Cmd+S before Cmd+S.
+    if pressed(Modifiers::COMMAND | Modifiers::SHIFT, Key::Z) || pressed(Modifiers::COMMAND, Key::Y) {
+        app.redo();
+    } else if pressed(Modifiers::COMMAND, Key::Z) {
+        app.undo();
+    } else if pressed(Modifiers::COMMAND | Modifiers::SHIFT, Key::S) {
+        app.save_as();
+    } else if pressed(Modifiers::COMMAND, Key::S) {
+        app.save();
+    } else if pressed(Modifiers::COMMAND, Key::O) {
+        app.open();
+    } else if pressed(Modifiers::COMMAND, Key::Plus) || pressed(Modifiers::COMMAND, Key::Equals) {
+        app.zoom_timeline(1.5, None);
+    } else if pressed(Modifiers::COMMAND, Key::Minus) {
+        app.zoom_timeline(1.0 / 1.5, None);
+    } else if pressed(Modifiers::COMMAND, Key::Num0) {
+        app.fit_timeline();
+    } else if pressed(Modifiers::NONE, Key::Escape) && app.fullscreen {
+        app.set_fullscreen(false);
+    } else if pressed(Modifiers::NONE, Key::F) {
+        app.set_fullscreen(!app.fullscreen);
+    } else if pressed(Modifiers::NONE, Key::Space) {
         app.toggle_play();
-    }
-    if pressed(Key::S) {
+    } else if pressed(Modifiers::NONE, Key::S) {
         app.split();
-    }
-    if pressed(Key::Delete) || pressed(Key::Backspace) {
+    } else if pressed(Modifiers::NONE, Key::Delete) || pressed(Modifiers::NONE, Key::Backspace) {
         app.delete();
     }
 }
@@ -73,14 +100,13 @@ fn drag_and_drop(ctx: &Context, app: &mut App) {
     }
     let over_work_area =
         |p| app.timeline_view.is_some_and(|v| v.contains(p)) || app.stage_rect.is_some_and(|r| r.contains(p));
+    let accept = pointer.is_some_and(over_work_area);
     let released = ctx.input(|i| i.pointer.any_released());
-    let dragged = if released {
-        DragAndDrop::take_payload::<LibraryDrag>(ctx)
-    } else {
-        None
-    };
-    if let Some(drag) = dragged.filter(|_| pointer.is_some_and(over_work_area)) {
-        app.add_from_library(drag.0, pointer);
+    let dragged = if released { take_dragged(ctx) } else { None };
+    match dragged.filter(|_| accept) {
+        Some(Dragged::Library(index)) => app.add_from_library(index, pointer),
+        Some(Dragged::Sound(sound)) => app.drop_sound(sound, pointer),
+        None => {}
     }
     cue(ctx, app);
 }
@@ -92,7 +118,7 @@ fn cue(ctx: &Context, app: &App) {
     let painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("drop")));
     let area = ctx.content_rect();
     painter.rect_stroke(area, 0.0, Stroke::new(8.0, ACCENT), StrokeKind::Inside);
-    let how = match (count > 1, app.stack_drops) {
+    let how = match (count > 1, app.drops_stack(Some(pointer))) {
         (false, _) => "ONE CLIP",
         (true, true) => "STACKED AS LAYERS",
         (true, false) => "ONE AFTER ANOTHER",
@@ -110,12 +136,16 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
     app.tick();
     let ctx = ui.ctx().clone();
     shortcuts(&ctx, app);
+    if app.fullscreen {
+        return fullscreen::show(ui, app);
+    }
     Panel::top("toolbar")
         .frame(frame())
         .show(ui, |ui| toolbar::show(ui, app));
     Panel::bottom("timeline")
         .frame(frame())
-        .min_size(230.0)
+        .resizable(false) // the grip inside the panel does the resizing and the lanes follow
+        .exact_size(app.timeline_height)
         .show(ui, |ui| timeline::show(ui, app));
     Panel::right("inspector")
         .frame(frame())
@@ -130,3 +160,8 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
     stage::show(ui, app);
     drag_and_drop(&ctx, app);
 }
+
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+mod tests_more;

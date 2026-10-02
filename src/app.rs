@@ -1,10 +1,12 @@
 use crate::fonts::Fonts;
+use crate::history::History;
 use crate::player::Player;
 use crate::preview::{self, Preview};
 use crate::project::Project;
 use crate::settle::Settle;
 use crate::sound_state::{LibraryTab, SoundsUi};
 use crate::thumbs::Thumbs;
+use crate::waveforms::Waveforms;
 use eframe::egui::Context;
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender, channel};
@@ -23,13 +25,23 @@ pub struct App {
     pub library_open: bool,
     pub library_tab: LibraryTab,
     pub sounds: SoundsUi,
-    /// Several files dropped at once: stacked as layers (true) or one after another (false).
-    pub stack_drops: bool,
     /// The timeline's last layout, so drops can find the lane and time under the pointer.
     pub timeline_view: Option<crate::drop::TimelineView>,
     /// The preview area of the last frame; library drags dropped here go to the playhead.
     pub stage_rect: Option<eframe::egui::Rect>,
+    /// Height of the timeline panel, set by dragging its grip.
+    pub timeline_height: f32,
+    /// The audio output, opened once at startup.
+    pub audio: Option<rodio::MixerDeviceSink>,
+    pub history: History,
+    /// Watching the preview full screen (see `ui/fullscreen.rs`).
+    pub fullscreen: bool,
+    /// The item copied with Cmd+C.
+    pub clipboard: Option<crate::project::Item>,
+    /// Set by a zoom: the horizontal scroll the timeline should jump to on its next frame.
+    pub scroll_to: Option<f32>,
     pub thumbs: Thumbs,
+    pub waveforms: Waveforms,
     /// Magnetic timeline: items snap to each other while dragging, and deleting closes the gap.
     pub magnet: bool,
     pub fonts: Option<Fonts>,
@@ -68,10 +80,16 @@ impl App {
             library_open: true,
             library_tab: LibraryTab::Files,
             sounds: SoundsUi::default(),
-            stack_drops: true,
             timeline_view: None,
             stage_rect: None,
+            scroll_to: None,
+            timeline_height: 270.0,
+            history: History::new(&Project::default()),
+            fullscreen: false,
+            clipboard: None,
+            audio: None,
             thumbs: Thumbs::default(),
+            waveforms: Waveforms::default(),
             magnet: true,
             fonts: None,
             preview: Preview::new(ctx.clone()),
@@ -114,6 +132,7 @@ impl App {
                 Event::Captions(c, fp) => (self.project.captions, self.captions_fp) = (c, Some(fp)),
                 Event::Fonts(f) => self.fonts = Some(*f),
                 Event::Thumb(path, px, w, h) => self.thumbs.insert(&self.ctx, path, &px, w, h),
+                Event::Waveform(path, list) => self.waveforms.insert(path, list),
                 other => self.on_sound_event(other),
             }
         }
@@ -137,7 +156,17 @@ impl App {
         self.resume = was_playing;
     }
 
+    /// Size of the preview pictures: larger while watching full screen.
+    pub fn preview_size(&self) -> (u32, u32) {
+        if self.fullscreen {
+            preview::fullscreen_size(self.project.aspect)
+        } else {
+            preview::size(self.project.aspect)
+        }
+    }
+
     fn poll_player(&mut self) {
+        let (w, h) = self.preview_size();
         let Some(player) = self.player.as_mut() else { return };
         if player.fingerprint != self.project.fingerprint() {
             return self.pause_for_edit(); // would play something stale; resumes after the edit settles
@@ -145,7 +174,6 @@ impl App {
         let update = player.poll();
         let total = self.project.total();
         self.playhead = player.position().min(total);
-        let (w, h) = preview::size(self.project.aspect);
         match update {
             Ok(u) => {
                 if let Some(frame) = u.frame {

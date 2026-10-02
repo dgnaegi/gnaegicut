@@ -1,100 +1,119 @@
-//! Free sound search inside the library: search, audition, add to the timeline.
+//! Free sound and music search inside the library: one search, results grouped, drag onto the timeline.
 
 use crate::app::App;
-use crate::sounds::Sound;
-use crate::theme::{BLACK, BORDER, WHITE, bold};
+use crate::drop::SoundDrag;
+use crate::sounds::{Sound, Source};
+use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
 use crate::widgets::{Kind, button, caps, chip, warn};
-use eframe::egui::{Align2, Key, ScrollArea, Sense, Stroke, StrokeKind, TextEdit, Ui, pos2, vec2};
+use eframe::egui::{Align2, Color32, Id, Key, Rect, ScrollArea, Sense, Stroke, StrokeKind, TextEdit, Ui, pos2, vec2};
 
-const ROW: f32 = 46.0;
+const ROW: f32 = 48.0;
 
 pub fn show(ui: &mut Ui, app: &mut App) {
-    let Some(source) = app.library_tab.source() else { return };
     ui.horizontal(|ui| {
         let width = (ui.available_width() - 100.0).max(60.0);
         let edit = TextEdit::singleline(&mut app.sounds.query)
-            .hint_text("Search free sounds")
+            .hint_text("Search sounds and music")
             .desired_width(width);
         let enter = ui.add(edit).lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
         if button(ui, "Search", Kind::Cta).clicked() || enter {
-            app.search_sounds();
+            app.search_sounds(None); // a typed search looks in both
         }
     });
-    ui.horizontal_wrapped(|ui| {
-        ui.spacing_mut().item_spacing = vec2(4.0, 4.0);
-        for word in source.suggestions() {
-            if chip(ui, word).clicked() {
-                app.sounds.query = word.to_string();
-                app.search_sounds();
-            }
-        }
-    });
-    status(ui, app, source);
+    suggestions(ui, app, "Sound", Source::Effects);
+    suggestions(ui, app, "Music", Source::Music);
+    status(ui, app);
 
-    let list: Vec<Sound> = if app.sounds.results_for == source {
-        app.sounds.results.clone()
-    } else {
-        vec![]
-    };
+    let (effects, music) = (app.sounds.effects.clone(), app.sounds.music.clone());
     ScrollArea::vertical().show(ui, |ui| {
-        for sound in list {
-            row(ui, app, sound);
-        }
+        group(ui, app, "Sound effects", effects);
+        group(ui, app, "Music", music);
         credits(ui, app);
     });
 }
 
-fn status(ui: &mut Ui, app: &App, source: crate::sounds::Source) {
+/// One-tap searches of a kind: the label, then the words.
+fn suggestions(ui: &mut Ui, app: &mut App, label: &str, source: Source) {
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = vec2(4.0, 4.0);
+        caps(ui, label);
+        for word in source.suggestions() {
+            if chip(ui, word).clicked() {
+                app.sounds.query = word.to_string();
+                app.search_sounds(Some(source));
+            }
+        }
+    });
+}
+
+fn status(ui: &mut Ui, app: &App) {
     let s = &app.sounds;
-    if s.loading {
+    if s.loading > 0 {
         caps(ui, "Searching…");
     } else if let Some(e) = &s.error {
         warn(ui, e);
-    } else if s.searched && s.results_for == source && s.results.is_empty() {
+    } else if s.searched && s.effects.is_empty() && s.music.is_empty() {
         caps(ui, "No results");
-    } else if s.results_for == source && !s.results.is_empty() {
-        caps(ui, &format!("{} results", s.results.len()));
     }
 }
 
+/// A heading with the number of results, then the rows. Nothing at all for an empty group.
+fn group(ui: &mut Ui, app: &mut App, title: &str, list: Vec<Sound>) {
+    if list.is_empty() {
+        return;
+    }
+    ui.add_space(6.0);
+    caps(ui, &format!("{title} ({})", list.len()));
+    for sound in list {
+        row(ui, app, sound);
+    }
+}
+
+/// One result. Drag it onto the timeline to use it; the square on the right auditions it.
 fn row(ui: &mut Ui, app: &mut App, sound: Sound) {
-    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), ROW), Sense::hover());
+    let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), ROW), Sense::click_and_drag());
+    if resp.dragged() {
+        resp.dnd_set_drag_payload(SoundDrag(sound.clone()));
+    }
+    let play = Rect::from_min_size(rect.right_top() + vec2(-ROW + 8.0, 8.0), vec2(ROW - 16.0, ROW - 16.0));
+    let play_resp = ui.interact(play, Id::new(("sound-play", &sound.id)), Sense::CLICK);
+
+    let busy = app.sounds.busy.contains(&sound.id);
+    let playing = app.sounds.playing.as_ref() == Some(&sound.id);
+    let hot = play_resp.hovered();
+    let (symbol, fill, ink) = match (busy, playing, hot) {
+        (true, ..) => ("…", WHITE, BLACK),
+        (_, true, _) => ("■", BLACK, WHITE),
+        (_, _, true) => ("▶", ACCENT, WHITE),
+        _ => ("▶", WHITE, BLACK),
+    };
     let p = ui.painter();
-    p.rect_filled(rect, 0.0, WHITE);
+    p.rect_filled(rect, 0.0, if resp.hovered() { MUTED } else { WHITE });
     p.rect_stroke(rect, 0.0, Stroke::new(BORDER, BLACK), StrokeKind::Inside);
-    p.with_clip_rect(rect.shrink(4.0)).text(
+    p.rect_filled(play, 0.0, fill);
+    p.rect_stroke(play, 0.0, Stroke::new(BORDER, BLACK), StrokeKind::Inside);
+    p.text(play.center(), Align2::CENTER_CENTER, symbol, bold(13.0), ink);
+
+    let text_area = Rect::from_min_max(rect.min, pos2(play.left() - 4.0, rect.bottom())).shrink(4.0);
+    let meta = format!("{} · {} · {}", sound.duration_label(), sound.license, sound.creator);
+    let clipped = p.with_clip_rect(text_area);
+    clipped.text(
         pos2(rect.left() + 8.0, rect.top() + 8.0),
         Align2::LEFT_TOP,
         sound.title.to_uppercase(),
         bold(11.0),
         BLACK,
     );
-    let meta = format!("{} · {} · {}", sound.duration_label(), sound.license, sound.creator);
-    p.with_clip_rect(rect.shrink(4.0)).text(
+    clipped.text(
         pos2(rect.left() + 8.0, rect.top() + 26.0),
         Align2::LEFT_TOP,
         meta,
         bold(10.0),
-        eframe::egui::Color32::from_gray(110),
+        Color32::from_gray(110),
     );
-
-    let busy = app.sounds.busy.contains(&sound.id);
-    let playing = app.sounds.playing.as_ref() == Some(&sound.id);
-    ui.horizontal(|ui| {
-        let (label, kind) = if busy {
-            ("…", Kind::Plain)
-        } else if playing {
-            ("Stop", Kind::Active)
-        } else {
-            ("Play", Kind::Plain)
-        };
-        if button(ui, label, kind).clicked() && !busy {
-            app.preview_sound(sound.clone());
-        }
-        if button(ui, "+ Add", Kind::Plain).clicked() {
-            app.add_sound(sound.clone());
-        }
-    });
+    if play_resp.clicked() && !busy {
+        app.preview_sound(sound);
+    }
     ui.add_space(4.0);
 }
 

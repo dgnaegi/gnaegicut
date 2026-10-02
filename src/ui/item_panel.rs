@@ -2,8 +2,8 @@
 
 use crate::app::App;
 use crate::project::{Kind, Look, Transition, ZoomEffect};
-use crate::widgets::{Kind as Btn, button, caps, choice_grid, section};
-use eframe::egui::{Slider, Ui};
+use crate::widgets::{Kind as Btn, button, caps, chip, choice_grid, section};
+use eframe::egui::{Slider, Ui, vec2};
 
 fn percent(v: f64, _: std::ops::RangeInclusive<usize>) -> String {
     format!("{:.0}%", v * 100.0)
@@ -74,6 +74,9 @@ pub fn motion(ui: &mut Ui, app: &mut App, id: u64) {
 }
 
 /// One-click voice clean-up and gain for clips that have sound.
+const FADE_PRESETS: [f32; 4] = [0.5, 1.0, 2.0, 3.0];
+const DEFAULT_END_FADE: f32 = 2.0;
+
 pub fn audio(ui: &mut Ui, app: &mut App, id: u64) {
     let Some(it) = app.project.get_mut(id) else { return };
     let kind = if it.enhance { Btn::Active } else { Btn::Cta };
@@ -95,9 +98,30 @@ pub fn audio(ui: &mut Ui, app: &mut App, id: u64) {
             .text("volume")
             .custom_formatter(percent),
     );
-    if it.kind == Kind::Audio {
-        ui.add(Slider::new(&mut it.fade_in, 0.0..=5.0).text("fade in").suffix("s"));
-        ui.add(Slider::new(&mut it.fade_out, 0.0..=5.0).text("fade out").suffix("s"));
+    if it.kind != Kind::Audio {
+        return;
+    }
+    ui.add_space(12.0);
+    section(ui, "Fade out");
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = vec2(4.0, 4.0);
+        for secs in FADE_PRESETS {
+            if chip(ui, &format!("{secs}s")).clicked() {
+                it.fade_out = secs.min(it.len() as f32);
+            }
+        }
+    });
+    ui.add(Slider::new(&mut it.fade_out, 0.0..=10.0).text("fade out").suffix("s"));
+    ui.add(Slider::new(&mut it.fade_in, 0.0..=10.0).text("fade in").suffix("s"));
+    // Cuts the music where the picture ends and fades it out there.
+    let to_end = button(ui, "Fade out at end of video", Btn::Cta).clicked();
+    if to_end {
+        let secs = if it.fade_out > 0.0 {
+            it.fade_out
+        } else {
+            DEFAULT_END_FADE
+        };
+        app.project.fade_out_at_end(id, secs);
     }
 }
 

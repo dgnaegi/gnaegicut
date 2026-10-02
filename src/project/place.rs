@@ -17,6 +17,17 @@ impl Project {
         (from..).find(|&t| free(t)).unwrap_or(from)
     }
 
+    /// Puts a copy of `item` at `at` on `track`, or on the first track above it that is free then. Unlike
+    /// `place_batch` it keeps the item as it is (size, effects, volume). Its transition into the clip before it is
+    /// dropped, because that clip is not necessarily next to it any more. Returns the new id.
+    pub fn paste_item(&mut self, mut item: Item, track: usize, at: f64) -> u64 {
+        let lane = self.free_track(track, at, item.len());
+        item.at = at.max(0.0);
+        item.join = None;
+        (item.link_in, item.link_out, item.cut) = (None, None, 0.0);
+        self.add(lane, item)
+    }
+
     /// Places `items` starting at `time`. With `stack`, each lands on its own track going upward from `track`
     /// (skipping occupied ones) and all start at `time`; otherwise they follow one another on `track`.
     /// Small overlays on upper tracks start at half size. Returns the new ids in order.

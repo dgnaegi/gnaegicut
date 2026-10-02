@@ -88,11 +88,14 @@ playback continues from the playhead.
    ffmpeg never needs to seek inside a composite. Zoom effects stay continuous through `Item::cut`.
 2. `stream::video` pipes RGBA frames at 30 fps through a bounded channel. The bound is the backpressure that keeps
    ffmpeg only slightly ahead of the clock.
-3. `stream::audio` renders the mixed audio to f32 PCM; `rodio` plays it.
+3. `stream::audio_chunks` streams the mixed audio as 0.2 s chunks of f32 PCM; `rodio` queues them as they arrive, so
+   playback starts after the first chunk instead of waiting for the whole track. The audio device is opened once at startup
+   (`audio_out.rs`) and shared with sound previews; opening it per play press blocked the UI.
 4. When audio and the first frame are both ready the clock starts. Each tick shows the newest frame whose index is
    at or before `elapsed * 30`, dropping older ones. Audio is the master clock, so late frames are skipped
    rather than slowing sound. The texture is updated in place; re-allocating it per frame caused stutter.
-5. Dropping the `Player` drops the frame receiver; the stream thread notices, kills ffmpeg and exits.
+5. Dropping the `Player` silences the queue at once, drops the frame receiver, and the stream thread kills ffmpeg. A test
+   checks that `start()` does not block and that playback begins in well under two seconds for a 40 s project.
 
 ## Transitions between clips
 
@@ -108,10 +111,40 @@ it instead of restarting. A transition whose clips were dragged apart is ignored
 
 ## Dropping media
 
-`drop.rs` turns a pointer position into a lane and time using the timeline's last layout (`TimelineView`, saved each frame).
-Over the timeline, media lands on that lane at that time (snapping to edges when the magnet is on); anywhere else it
-goes to the active track. `Project::place_batch` does the placing: stacked (each file on the next free track upward, all at
-the same time) or in sequence. Library cards are dragged with egui's drag-and-drop payloads.
+`drop/` turns a pointer position into a lane and time using the timeline's last layout (`TimelineView`, saved each frame).
+Where it lands decides how: on an existing lane the files follow one another along it, at the time under the pointer
+(snapping to edges when the magnet is on); in the new-track area above the lanes, or on the preview, every file gets a
+track of its own and lies on top of the others (`App::drops_stack`). `Project::place_batch` does the placing, and library
+cards and sound results are dragged with egui payloads. `take_dragged` peeks at the payload type before clearing it: egui's
+`take_payload::<T>` empties the slot even when the type does not match, which once threw dragged sounds away.
+
+## Timeline
+
+The panel's height is `App::timeline_height`, changed by a grip along its top edge; lane height follows it
+(`lane_height`), so a taller timeline means taller tracks and bigger waveforms. Pinch or Cmd+scroll zooms the time axis
+around the pointer (`timeline_zoom.rs` keeps the second under the pointer in place). Sounds show their waveform
+(`media/waveform.rs`, computed once per file) scaled by their fades, with draggable fade handles.
+
+## Undo and redo
+
+`history/` keeps whole copies of the project (small, and every kind of edit becomes undoable without an inverse for each).
+`History::observe` runs every frame and records a step once the project differs from the last one *and has settled*: mouse
+up and no change for 150 ms, so a drag or a slider sweep is one step. Undo first records a pending edit, so it never skips
+one. The "has it changed" test is the saved JSON of the project, so captions, tracks, the library and transitions all count,
+while selection, playhead and zoom do not. Opening a project, or re-rendering text after loading, resets the history.
+
+## Full screen
+
+`ui/fullscreen.rs` replaces the whole UI with the picture fitted to the window (F, Esc, or the button under the preview). It
+renders a larger preview (`preview::fullscreen_size`, long side 1280) and starts playing at once. The editing preview is half the
+export size, even-numbered (4:5 would otherwise be 675 rows, which video encoders reject).
+
+## Clipboard and shortcuts
+
+Cmd+C, Cmd+X and Cmd+V arrive from egui as `Copy`, `Cut` and `Paste` events on macOS, not as key presses, so `shortcuts`
+looks for both. egui only sends `Paste` when the system clipboard holds text, so copying also leaves a short note there. Keys are *consumed* when used, and the gate is `text_edit_focused`, not `egui_wants_keyboard_input`
+(which is true for any focused widget and made Space unreliable). Paste puts a copy at the playhead on a free track
+(`Project::paste_item`) and drops its old transition.
 
 ## Sounds
 
@@ -140,6 +173,13 @@ expression of `t`. Rotation uses `rotate` on a transparent canvas the size of th
 stay transparent and the item stays centred.
 
 ## Captions
+
+Captions rest at 60% of the frame height (`CaptionLayout::position`), pulled up only if a large font would reach the
+platform buttons below the safe zone, and wrap inside the narrower of the two side margins. Heavy styles (Pop) are drawn as two
+ASS layers: a blurred outline underneath as the soft shadow, and perfectly sharp letters on top. Splitting
+(`caption/split.rs`) breaks a caption into pieces of at most N words and shares its time by character count, so the pieces
+tile the original span exactly. The transcript field shows every caption one per line, with a button to copy it all.
+
 
 `whisper::transcribe` renders the mixed audio to 16 kHz mono (including any voice enhancement, which helps accuracy),
 runs `whisper-cli` and parses the SRT. `ass::render` positions each line with `\pos` and the chosen font family.

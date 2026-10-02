@@ -70,11 +70,38 @@ impl App {
         self.pending_text = project.items().any(|i| i.kind == Kind::Text);
         let missing = persist::missing_media(&project);
         self.project = project;
+        self.history.reset(&self.project);
         (self.playhead, self.track) = (0.0, 0);
         self.select(crate::app::Selection::None);
         self.set_file(file);
         if !missing.is_empty() {
             self.status = format!("Missing media: {}", missing.join(", "));
+        }
+    }
+
+    /// Steps back through the edits (Cmd+Z).
+    pub fn undo(&mut self) {
+        self.stop();
+        if self.history.undo(&mut self.project) {
+            self.after_history_change("Undo");
+        }
+    }
+
+    /// Steps forward again (Shift+Cmd+Z).
+    pub fn redo(&mut self) {
+        self.stop();
+        if self.history.redo(&mut self.project) {
+            self.after_history_change("Redo");
+        }
+    }
+
+    /// Keeps the view valid after the project was replaced: no selection of an item that no longer exists.
+    fn after_history_change(&mut self, what: &str) {
+        self.status = what.into();
+        self.playhead = self.playhead.min(self.project.total());
+        self.track = self.track.min(self.project.tracks.len().saturating_sub(1));
+        if matches!(self.selection, crate::app::Selection::Item(id) if self.project.get(id).is_none()) {
+            self.select(crate::app::Selection::None);
         }
     }
 
@@ -91,6 +118,10 @@ impl App {
     /// Runs every frame: cheap checks that act once the user has stopped editing.
     pub fn housekeeping(&mut self) {
         let (now, fp) = (Instant::now(), self.project.fingerprint());
+        let pointer_down = self.ctx.input(|i| i.pointer.any_down());
+        if self.history.observe(&self.project, now, pointer_down) {
+            self.ctx.request_repaint_after(Duration::from_millis(200)); // come back once the edit has settled
+        }
         self.edits.observe(fp, now);
         self.watch_sound_preview();
         let quiet = self.edits.quiet_for(now);
@@ -104,6 +135,7 @@ impl App {
                 .map(|i| i.id)
                 .collect();
             ids.into_iter().for_each(|id| self.refresh_text(id)); // the saved PNGs live in temp and may be gone
+            self.history.reset(&self.project); // re-rendering is not something to undo
         }
         if self.resume {
             let dragging = self.ctx.input(|i| i.pointer.any_down());

@@ -8,8 +8,8 @@ use crate::project::{Kind, MediaRef};
 use crate::sound_state::LibraryTab;
 use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
 use crate::thumbs::BOX;
-use crate::widgets::{Kind as Btn, button, section, segmented, tabs};
-use eframe::egui::{Align2, Rect, ScrollArea, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use crate::widgets::{section, tabs};
+use eframe::egui::{Align2, Id, Rect, ScrollArea, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 const ROW: f32 = 72.0;
 
@@ -22,11 +22,7 @@ fn duration(m: &MediaRef) -> String {
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     patterns::dots(&ui.painter_at(ui.max_rect()), ui.max_rect());
-    let list = [
-        (LibraryTab::Files, "Files"),
-        (LibraryTab::Effects, "Sounds"),
-        (LibraryTab::Music, "Music"),
-    ];
+    let list = [(LibraryTab::Files, "Files"), (LibraryTab::Sounds, "Sounds")];
     tabs(ui, &mut app.library_tab, &list);
     ui.add_space(6.0);
     match app.library_tab {
@@ -37,12 +33,6 @@ pub fn show(ui: &mut Ui, app: &mut App) {
 
 fn files(ui: &mut Ui, app: &mut App) {
     section(ui, &format!("Library ({})", app.project.media.len()));
-    // Only a hover tooltip: what the two modes do when several files are dropped at once.
-    ui.scope(|ui| {
-        segmented(ui, &mut app.stack_drops, &[(true, "Stack"), (false, "Sequence")]);
-    })
-    .response
-    .on_hover_text("Several dropped files: stacked as layers, or one after another");
     if app.project.media.is_empty() {
         return;
     }
@@ -50,7 +40,7 @@ fn files(ui: &mut Ui, app: &mut App) {
         .selected_item()
         .and_then(|id| app.project.get(id))
         .map(|i| i.path.clone());
-    let (mut focus, mut add, mut remove) = (None, None, None);
+    let (mut focus, mut remove) = (None, None);
     ScrollArea::vertical().show(ui, |ui| {
         for (index, media) in app.project.media.clone().iter().enumerate() {
             let used = app.project.usage(&media.path);
@@ -115,25 +105,29 @@ fn files(ui: &mut Ui, app: &mut App) {
                 bold(10.0),
                 if used == 0 { ACCENT } else { BLACK },
             );
-            if resp.clicked() {
+            // A small × in the corner takes the file out of the library.
+            let cross = Rect::from_min_size(rect.right_top() + vec2(-24.0, 4.0), vec2(20.0, 20.0));
+            let cross_resp = ui.interact(cross, Id::new(("library-remove", index)), Sense::CLICK);
+            let hot = cross_resp.hovered();
+            let p = ui.painter();
+            p.rect_filled(cross, 0.0, if hot { ACCENT } else { WHITE });
+            p.text(
+                cross.center(),
+                Align2::CENTER_CENTER,
+                "×",
+                bold(14.0),
+                if hot { WHITE } else { BLACK },
+            );
+            if cross_resp.clicked() {
+                remove = Some(index);
+            } else if resp.clicked() {
                 focus = Some(media.path.clone());
             }
-            ui.horizontal(|ui| {
-                if button(ui, "+ Add", Btn::Plain).clicked() {
-                    add = Some(index);
-                }
-                if button(ui, "Remove", Btn::Plain).clicked() {
-                    remove = Some(index);
-                }
-            });
             ui.add_space(4.0);
         }
     });
     if let Some(path) = focus {
         app.focus_media(&path);
-    }
-    if let Some(i) = add {
-        app.add_from_library(i, None);
     }
     if let Some(i) = remove {
         app.remove_from_library(i);

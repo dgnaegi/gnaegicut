@@ -1,10 +1,10 @@
 use super::*;
 
-fn video(len: f64) -> Item {
+pub(super) fn video(len: f64) -> Item {
     Item::new("a.mp4".into(), "a".into(), Kind::Video, (1920, 1080), len, true)
 }
 
-fn project() -> (Project, u64, u64) {
+pub(super) fn project() -> (Project, u64, u64) {
     let mut p = Project::default();
     let a = p.add(0, video(4.0));
     let mut b = video(2.0);
@@ -147,4 +147,37 @@ fn only_empty_tracks_can_be_removed_and_never_the_last() {
     assert_eq!(p.tracks.len(), 1);
     let mut empty = Project::default();
     assert!(!empty.remove_empty_track(0), "the last track stays");
+}
+
+#[test]
+fn the_edges_are_the_seams_of_clips_and_captions_without_duplicates() {
+    let (mut p, ..) = project(); // a: 0..4, b: 4..6 meet at 4
+    p.captions = vec![
+        Caption {
+            start: 1.0,
+            end: 4.0,
+            text: "x".into(),
+        },
+        Caption {
+            start: 4.0,
+            end: 5.5,
+            text: "y".into(),
+        },
+    ];
+    assert_eq!(
+        p.edges(),
+        vec![0.0, 1.0, 4.0, 5.5, 6.0],
+        "the seam at 4 s appears once, in order"
+    );
+    assert_eq!(Project::default().edges(), vec![0.0]);
+}
+
+#[test]
+fn a_nearby_playhead_lands_on_the_seam_and_a_far_one_stays_put() {
+    use crate::ui::snap;
+    let (p, ..) = project();
+    let edges = p.edges();
+    assert_eq!(snap(4.03, 0.0, &edges, 100.0), 4.0, "within 8 px at 100 px/s");
+    assert_eq!(snap(4.5, 0.0, &edges, 100.0), 4.5, "far from every seam");
+    assert_eq!(snap(5.96, 0.0, &edges, 100.0), 6.0, "the end counts too");
 }
