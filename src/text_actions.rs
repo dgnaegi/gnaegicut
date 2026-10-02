@@ -5,6 +5,9 @@ use crate::fonts::DEFAULT_FONT;
 use crate::project::{Item, Kind, Transition};
 use crate::text;
 
+/// The font of lower thirds, when it is installed.
+const LOWER_THIRD_FONT: &str = "ALRuderPlakat-Regular";
+
 /// Where a new lower third starts, as a fraction of the frame width.
 const LEFT_MARGIN: f32 = 0.06;
 
@@ -18,8 +21,9 @@ impl App {
     pub fn add_lower_third(&mut self) {
         self.add_text_item(|item| {
             item.text = "Name\nRole or place".into();
-            (item.bar, item.outline, item.font_size, item.color) = (true, false, 56.0, [0, 0, 0]);
-            (item.x, item.y, item.end) = (0.4, 0.78, 4.0);
+            (item.bar, item.outline, item.font_size, item.color) = (true, false, 88.0, [0, 0, 0]);
+            (item.y, item.end) = (0.72, 4.0);
+            item.font = LOWER_THIRD_FONT.into(); // the AL poster font; machines without it use the bundled one
             (item.transition, item.fade_in, item.fade_out) = (Transition::WipeRight, 0.35, 0.25);
         });
     }

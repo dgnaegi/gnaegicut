@@ -12,6 +12,8 @@ mod tests;
 #[cfg(test)]
 mod tests_audio;
 #[cfg(test)]
+mod tests_bar;
+#[cfg(test)]
 mod tests_captions;
 #[cfg(test)]
 mod tests_fx;

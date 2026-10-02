@@ -3,6 +3,9 @@
 
 use crate::project::{Item, Kind, Transition, ease_out};
 
+/// How wide the soft edge of a fading wipe is, as a fraction of the width.
+const FEATHER: f64 = 0.35;
+
 /// Filter statements that produce the item's reveal mask as `[m{i}]`, sized to the item's box.
 pub fn mask(i: usize, item: &Item, (bw, bh): (u32, u32)) -> Option<String> {
     let phase = item.reveal()?;
@@ -11,7 +14,10 @@ pub fn mask(i: usize, item: &Item, (bw, bh): (u32, u32)) -> Option<String> {
         return None;
     }
     let p = ease_out(&format!("clip((T+{:.3})/{:.3},0,1)", item.cut, phase.len));
+    // A lower third fades in along the wipe: the edge is a soft ramp, so the text appears from left to right.
+    let soft = |dist: String| format!("255*clip(({dist})/(W*{FEATHER}),0,1)");
     let lum = match phase.effect {
+        Transition::WipeRight if item.bar => soft(format!("W*{p}*(1+{FEATHER})-X")),
         Transition::WipeRight => format!("255*lt(X,W*{p})"),
         Transition::WipeLeft => format!("255*gt(X,W*(1-{p}))"),
         Transition::WipeDown => format!("255*lt(Y,H*{p})"),

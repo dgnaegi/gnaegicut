@@ -22,7 +22,7 @@ impl Plan {
     pub fn new(size: f32) -> Self {
         Self {
             indent: size * 0.42,
-            hpad: size * 0.2,
+            hpad: size * 0.3,
             margin: (size / 10.0).ceil(),
             bracket: (size * 0.14).ceil(),
             gap: (size / 18.0).ceil(),
