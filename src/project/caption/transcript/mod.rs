@@ -43,7 +43,7 @@ impl Project {
                         squash(&glued) == squash(l)
                     });
                     if let Some(k) = split {
-                        out.extend(Caption::tiled(o.start, o.end, new[j..j + k].to_vec()));
+                        out.extend(Caption::evenly(o.start, o.end, new[j..j + k].to_vec()));
                         (i, j) = (i + 1, j + k);
                     } else if let Some(k) = join {
                         let text = old[i..i + k]
@@ -61,7 +61,7 @@ impl Project {
                         i += 1; // this old caption was deleted
                     } else if new.get(j + 1).is_some_and(|next| o.text.trim() == next) {
                         // A line was added in front of this caption: it shares the caption's time.
-                        out.extend(Caption::tiled(
+                        out.extend(Caption::evenly(
                             o.start,
                             o.end,
                             vec![l.clone(), o.text.trim().to_string()],

@@ -34,13 +34,22 @@ impl Caption {
 
     /// One caption per text, tiling `start..end` exactly; each gets time in proportion to its number of characters.
     pub(super) fn tiled(start: f64, end: f64, texts: Vec<String>) -> Vec<Caption> {
-        let total = texts.iter().map(|t| t.chars().count()).sum::<usize>().max(1);
+        Self::shared(start, end, texts, |t| t.chars().count())
+    }
+
+    /// One caption per text, tiling `start..end` exactly in equal parts: splitting in two halves the time.
+    pub(super) fn evenly(start: f64, end: f64, texts: Vec<String>) -> Vec<Caption> {
+        Self::shared(start, end, texts, |_| 1)
+    }
+
+    fn shared(start: f64, end: f64, texts: Vec<String>, weight: fn(&str) -> usize) -> Vec<Caption> {
+        let total = texts.iter().map(|t| weight(t)).sum::<usize>().max(1);
         let (mut at, mut seen, last) = (start, 0usize, texts.len().saturating_sub(1));
         texts
             .into_iter()
             .enumerate()
             .map(|(i, text)| {
-                seen += text.chars().count();
+                seen += weight(&text);
                 let to = if i == last {
                     end
                 } else {
@@ -112,6 +121,12 @@ mod tests {
             pieces[2].end - pieces[2].start > pieces[0].end - pieces[0].start,
             "'three' is longer than 'one'"
         );
+    }
+
+    #[test]
+    fn evenly_gives_every_piece_the_same_time_however_short_the_text() {
+        let pieces = Caption::evenly(0.0, 4.0, vec!["a long first part".into(), "x".into()]);
+        assert_eq!((pieces[0].end, pieces[1].start, pieces[1].end), (2.0, 2.0, 4.0));
     }
 
     #[test]

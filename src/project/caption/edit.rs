@@ -35,7 +35,7 @@ impl Project {
         let Some(c) = self.captions.get_mut(index) else {
             return false;
         };
-        c.start = start.clamp(before, c.end - MIN_CAPTION);
+        c.start = start.min(c.end - MIN_CAPTION).max(before); // not `clamp`: that panics when the room is smaller than MIN_CAPTION
         true
     }
 
@@ -45,7 +45,7 @@ impl Project {
         let Some(c) = self.captions.get_mut(index) else {
             return false;
         };
-        c.end = end.clamp(c.start + MIN_CAPTION, after);
+        c.end = end.max(c.start + MIN_CAPTION).min(after);
         true
     }
 
@@ -98,6 +98,17 @@ mod tests {
         assert_eq!(span(&p, 0), (0.5, 2.6));
         p.resize_caption_end(0, 1.5);
         assert_eq!(span(&p, 0), (0.5, 1.5), "shorter again");
+    }
+
+    #[test]
+    fn dragging_into_a_gap_smaller_than_the_minimum_does_not_panic() {
+        let mut p = project();
+        p.captions[0].end = 2.95; // 0.05 s left before b
+        p.resize_caption_end(0, 9.0);
+        assert_eq!(span(&p, 0), (1.0, 3.0), "stops at the neighbour");
+        p.captions[1].start = 3.95;
+        p.resize_caption_start(1, 0.0);
+        assert!(span(&p, 1).0 < span(&p, 1).1);
     }
 
     #[test]
