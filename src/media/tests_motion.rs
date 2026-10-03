@@ -165,3 +165,12 @@ fn intro_and_outro_are_chosen_separately() {
     );
     assert!(near(at(&p, 0.02, 0.5, 0.5), BLACK), "still slides in from the right");
 }
+
+#[test]
+fn a_zoom_entrance_starts_bigger_than_its_box() {
+    let mut p = filling(Transition::Zoom, 1.0, 0.0);
+    p.tracks[0].items[0].scale = 0.5; // the box is half the frame, so a picture beyond it is easy to see
+    // Early in the fade-in: faint, but red appears outside the box, where it would have been cut off before.
+    assert!(at(&p, 0.1, 0.12, 0.5)[0] > 10, "overflows the box");
+    assert!(near(at(&p, 1.5, 0.12, 0.5), BLACK), "and settles inside the box");
+}

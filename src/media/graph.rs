@@ -104,6 +104,10 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
         Some(z) => format!("scale=w='{bw}*({z})':h='{bh}*({z})':eval=frame,crop={bw}:{bh}"),
     });
     pre.extend(item.fx_filters(w));
+    let grow = item.grow_expr(); // a zoom entrance may be bigger than the box, so it is not cut off there
+    if let Some(g) = &grow {
+        pre.push(format!("scale=w='{bw}*({g})':h='{bh}*({g})':eval=frame"));
+    }
     // After the box: rotation, fades, and shifting to the item's place on the timeline.
     let mut post = vec![];
     if item.rotation != 0.0 || item.spins() {
@@ -112,6 +116,11 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
     post.extend(item.fade_filters());
     post.extend(["setsar=1".to_string(), format!("setpts=PTS+{:.3}/TB", item.at)]);
 
+    let (x, y) = if grow.is_some() {
+        (format!("({x})+({rw}-w)/2"), format!("({y})+({rh}-h)/2")) // keep the bigger picture centred on the box
+    } else {
+        (x, y)
+    };
     let overlay = format!("[b{layer}][v{i}]overlay=x='{x}':y='{y}':eof_action=pass[{out}]");
     match reveal::mask(i, item, (bw, bh)) {
         None => format!(

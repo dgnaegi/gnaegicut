@@ -26,6 +26,7 @@ pub(super) fn ease_in(p: &str) -> String {
 
 const PUNCH_SECS: f64 = 0.6; // how long a punch-in or punch-out takes
 const BEAT_HZ: f32 = 2.5; // pulses per second of the Beat zoom
+const ZOOM_IN_GROWTH: f32 = 1.0; // a zoom entrance starts twice as big
 const SLAM_DAMP: f32 = 7.0; // how fast the slam settles
 const SLAM_HZ: f32 = 16.0; // radians per second of its springing
 const SPIN_RADIANS: f32 = -4.712_389; // three quarters of a turn, counter-clockwise
@@ -67,12 +68,23 @@ impl Item {
             ZoomEffect::Pulse => Some(format!("{z:.4}*(1+{a:.3}*0.5*(1-cos(2*PI*{BEAT_HZ}*{now})))")),
         };
         let enter = self.enter();
-        if !matches!(enter.effect, Transition::Zoom | Transition::Spin) || enter.len <= 0.0 {
+        if enter.effect != Transition::Spin || enter.len <= 0.0 {
             return base;
         }
-        // These entrances start 80% closer and settle to normal.
+        // A spin starts 80% closer, inside its box, and settles to normal.
         let settle = ease_out(&clamp01(&format!("{now}/{:.3}", enter.len)));
         Some(format!("({})*(1+0.8*(1-{settle}))", base.unwrap_or_else(|| "1".into())))
+    }
+
+    /// How much bigger than its box a zooming entrance is right now, as an expression: it starts too big for the
+    /// frame, so it is not cut off at the box, and shrinks into place. `None` for every other item.
+    pub fn grow_expr(&self) -> Option<String> {
+        let enter = self.enter();
+        if enter.effect != Transition::Zoom || enter.len <= 0.0 || self.rotation != 0.0 {
+            return None;
+        }
+        let settle = ease_out(&clamp01(&format!("{}/{:.3}", self.item_time(), enter.len)));
+        Some(format!("(1+{ZOOM_IN_GROWTH}*(1-{settle}))"))
     }
 
     /// The rotation as an ffmpeg expression in radians: the fixed angle, plus the spin of an entrance.
