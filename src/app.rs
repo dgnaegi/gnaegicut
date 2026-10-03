@@ -46,6 +46,8 @@ pub struct App {
     pub fonts: Option<Fonts>,
     pub preview: Preview,
     pub status: String,
+    /// What runs in the background right now ("Exporting", "Transcribing"); shown as a moving bar.
+    pub busy: Option<&'static str>,
     pub ctx: Context,
     pub tx: Sender<Event>,
     rx: Receiver<Event>,
@@ -92,6 +94,7 @@ impl App {
             fonts: None,
             preview: Preview::new(ctx.clone()),
             status: String::new(),
+            busy: None,
             ctx,
             tx,
             rx,
@@ -126,6 +129,7 @@ impl App {
         while let Ok(event) = self.rx.try_recv() {
             match event {
                 Event::Status(s) => self.status = s,
+                Event::Done => self.busy = None,
                 Event::Captions(c, fp) => (self.project.captions, self.captions_fp) = (c, Some(fp)),
                 Event::Fonts(f) => self.fonts = Some(*f),
                 Event::Thumb(path, px, w, h) => self.thumbs.insert(&self.ctx, path, &px, w, h),

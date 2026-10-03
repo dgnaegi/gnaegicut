@@ -3,7 +3,7 @@
 use super::timeline_items::Layout;
 use crate::app::{App, Selection, Tab};
 use crate::project::{Join, JoinEffect};
-use crate::theme::{ACCENT, BLACK, BORDER, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, LARGE, SMALL, WHITE, bold};
 use eframe::egui::{Align2, CursorIcon, Id, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 const MIN_WIDTH: f32 = 26.0;
@@ -57,7 +57,7 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
                         rect.center_top() + vec2(0.0, 4.0),
                         Align2::CENTER_TOP,
                         "◆",
-                        bold(11.0),
+                        bold(SMALL),
                         WHITE,
                     );
                     p.with_clip_rect(rect).text(
@@ -75,7 +75,7 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
                         rect.center(),
                         Align2::CENTER_CENTER,
                         "+",
-                        bold(14.0),
+                        bold(LARGE),
                         if resp.hovered() { WHITE } else { BLACK },
                     );
                 }

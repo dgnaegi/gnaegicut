@@ -1,6 +1,7 @@
 //! Reusable Swiss-style building blocks. Every panel composes these instead of styling ad hoc.
 
-use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, CAPTION, LABEL, MUTED, SUBTLE, WHITE, bold};
+pub use crate::widgets_input::{busy, choice, percent, percent_slider};
 use eframe::egui::{Align2, Color32, CursorIcon, Rect, Response, Sense, Stroke, StrokeKind, Ui, vec2};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -12,7 +13,7 @@ pub enum Kind {
 
 pub fn button(ui: &mut Ui, text: &str, kind: Kind) -> Response {
     let label = text.to_uppercase();
-    let font = bold(12.0);
+    let font = bold(LABEL);
     let width = ui.painter().layout_no_wrap(label.clone(), font.clone(), BLACK).size().x;
     let (rect, resp) = ui.allocate_exact_size(vec2(width + 28.0, 36.0), Sense::CLICK);
     let hot = resp.hovered() || resp.is_pointer_button_down_on();
@@ -76,7 +77,7 @@ pub fn section(ui: &mut Ui, title: &str) {
     ui.horizontal(|ui| {
         let (marker, _) = ui.allocate_exact_size(vec2(8.0, 8.0), Sense::hover());
         ui.painter().rect_filled(marker, 0.0, ACCENT);
-        ui.label(eframe::egui::RichText::new(title.to_uppercase()).font(bold(12.0)));
+        ui.label(eframe::egui::RichText::new(title.to_uppercase()).font(bold(LABEL)));
     });
     rule(ui);
 }
@@ -89,7 +90,7 @@ pub fn tabs<T: PartialEq + Copy>(ui: &mut Ui, current: &mut T, options: &[(T, &s
         ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
         for (value, label) in options {
             let label = label.to_uppercase();
-            let width = ui.painter().layout_no_wrap(label.clone(), bold(12.0), BLACK).size().x;
+            let width = ui.painter().layout_no_wrap(label.clone(), bold(LABEL), BLACK).size().x;
             let (rect, resp) = ui.allocate_exact_size(vec2(width + 20.0, 34.0), Sense::CLICK);
             let active = current == value;
             let ink = if active {
@@ -97,13 +98,13 @@ pub fn tabs<T: PartialEq + Copy>(ui: &mut Ui, current: &mut T, options: &[(T, &s
             } else if resp.hovered() {
                 ACCENT
             } else {
-                Color32::from_gray(120)
+                SUBTLE
             };
             ui.painter().text(
                 rect.center() - vec2(0.0, 2.0),
                 Align2::CENTER_CENTER,
                 label,
-                bold(12.0),
+                bold(LABEL),
                 ink,
             );
             if active {
@@ -129,15 +130,19 @@ pub fn rule(ui: &mut Ui) {
 pub fn caps(ui: &mut Ui, text: &str) {
     ui.label(
         eframe::egui::RichText::new(text.to_uppercase())
-            .font(bold(10.0))
-            .color(Color32::from_gray(90)),
+            .font(bold(CAPTION))
+            .color(SUBTLE),
     );
 }
 
 /// A small tag-like button, for quick suggestions.
 pub fn chip(ui: &mut Ui, text: &str) -> Response {
     let label = text.to_uppercase();
-    let width = ui.painter().layout_no_wrap(label.clone(), bold(10.0), BLACK).size().x;
+    let width = ui
+        .painter()
+        .layout_no_wrap(label.clone(), bold(CAPTION), BLACK)
+        .size()
+        .x;
     let (rect, resp) = ui.allocate_exact_size(vec2(width + 16.0, 24.0), Sense::CLICK);
     let (bg, fg) = if resp.hovered() {
         (ACCENT, WHITE)
@@ -152,7 +157,7 @@ pub fn chip(ui: &mut Ui, text: &str) -> Response {
         Stroke::new(BORDER, if resp.hovered() { ACCENT } else { BLACK }),
         StrokeKind::Inside,
     );
-    p.text(rect.center(), Align2::CENTER_CENTER, label, bold(10.0), fg);
+    p.text(rect.center(), Align2::CENTER_CENTER, label, bold(CAPTION), fg);
     resp.on_hover_cursor(CursorIcon::PointingHand)
 }
 
@@ -160,7 +165,7 @@ pub fn chip(ui: &mut Ui, text: &str) -> Response {
 pub fn warn(ui: &mut Ui, text: &str) {
     ui.label(
         eframe::egui::RichText::new(text.to_uppercase())
-            .font(bold(10.0))
+            .font(bold(CAPTION))
             .color(ACCENT),
     );
 }

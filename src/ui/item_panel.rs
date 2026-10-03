@@ -2,19 +2,15 @@
 
 use crate::app::App;
 use crate::project::{Crop, Kind, Look, Transition, ZoomEffect, crop};
-use crate::widgets::{Kind as Btn, button, caps, chip, choice_grid, section};
+use crate::widgets::{Kind as Btn, button, caps, chip, choice, percent, percent_slider, section};
 use eframe::egui::{Slider, Ui, vec2};
-
-fn percent(v: f64, _: std::ops::RangeInclusive<usize>) -> String {
-    format!("{:.0}%", v * 100.0)
-}
 
 pub fn placement(ui: &mut Ui, app: &mut App, id: u64) {
     let aspect = app.project.aspect;
     let Some(it) = app.project.get_mut(id) else { return };
     caps(ui, &it.name);
-    ui.add(Slider::new(&mut it.x, -0.5..=1.5).text("x").custom_formatter(percent));
-    ui.add(Slider::new(&mut it.y, -0.5..=1.5).text("y").custom_formatter(percent));
+    percent_slider(ui, &mut it.x, -0.5..=1.5, "x");
+    percent_slider(ui, &mut it.y, -0.5..=1.5, "y");
     ui.add(
         Slider::new(&mut it.scale, 0.05..=6.0)
             .logarithmic(true)
@@ -75,34 +71,22 @@ pub fn motion(ui: &mut Ui, app: &mut App, id: u64) {
             .text("zoom")
             .custom_formatter(|v, _| format!("{v:.2}x")),
     );
-    let effects: Vec<_> = ZoomEffect::ALL.iter().map(|e| (*e, e.label())).collect();
-    choice_grid(ui, &mut it.effect, &effects);
+    choice(ui, &mut it.effect, &ZoomEffect::ALL, ZoomEffect::label);
     if it.effect != ZoomEffect::None {
-        ui.add(
-            Slider::new(&mut it.amount, 0.05..=1.0)
-                .text("strength")
-                .custom_formatter(percent),
-        );
+        percent_slider(ui, &mut it.amount, 0.05..=1.0, "strength");
     }
     ui.add_space(12.0);
     section(ui, "Look and shake");
-    let looks: Vec<_> = Look::ALL.iter().map(|l| (*l, l.label())).collect();
-    choice_grid(ui, &mut it.look, &looks);
-    ui.add(
-        Slider::new(&mut it.shake, 0.0..=1.0)
-            .text("shake")
-            .custom_formatter(percent),
-    );
+    choice(ui, &mut it.look, &Look::ALL, Look::label);
+    percent_slider(ui, &mut it.shake, 0.0..=1.0, "shake");
     ui.add_space(12.0);
     section(ui, "Intro");
-    let intros: Vec<_> = Transition::INTRO.iter().map(|t| (*t, t.label())).collect();
-    choice_grid(ui, &mut it.transition, &intros);
+    choice(ui, &mut it.transition, &Transition::INTRO, Transition::label);
     ui.add(Slider::new(&mut it.fade_in, 0.0..=2.0).text("length").suffix("s"));
     ui.add_space(12.0);
     section(ui, "Outro");
-    let outros: Vec<_> = Transition::OUTRO.iter().map(|t| (*t, t.label())).collect();
     let mut outro = it.outro_effect();
-    if choice_grid(ui, &mut outro, &outros) {
+    if choice(ui, &mut outro, &Transition::OUTRO, Transition::label) {
         it.outro = Some(outro);
     }
     ui.add(Slider::new(&mut it.fade_out, 0.0..=2.0).text("length").suffix("s"));
@@ -128,11 +112,7 @@ pub fn audio(ui: &mut Ui, app: &mut App, id: u64) {
     {
         it.enhance = !it.enhance;
     }
-    ui.add(
-        Slider::new(&mut it.volume, 0.0..=2.0)
-            .text("volume")
-            .custom_formatter(percent),
-    );
+    percent_slider(ui, &mut it.volume, 0.0..=2.0, "volume");
     if it.kind != Kind::Audio {
         return;
     }

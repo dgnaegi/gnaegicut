@@ -2,7 +2,7 @@
 
 use super::timeline_items::{ADD_ROW, Layout, RULER, snap};
 use crate::app::{App, Selection};
-use crate::theme::{ACCENT, BLACK, bold};
+use crate::theme::{ACCENT, BLACK, CAPTION, bold};
 use eframe::egui::{Align2, Rect, Stroke, StrokeKind, Ui, pos2, vec2};
 
 pub(super) const CAPTION_LANE: f32 = 28.0;
@@ -24,7 +24,7 @@ pub(super) fn ruler(ui: &Ui, lay: &Layout, seconds: f64) {
                 pos2(x + 3.0, lay.rect.top() + 1.0),
                 Align2::LEFT_TOP,
                 format!("{s}"),
-                bold(10.0),
+                bold(CAPTION),
                 BLACK,
             );
         }

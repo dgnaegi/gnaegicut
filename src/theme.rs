@@ -10,7 +10,21 @@ pub const WHITE: Color32 = Color32::WHITE;
 pub const BLACK: Color32 = Color32::BLACK;
 pub const MUTED: Color32 = Color32::from_rgb(0xF2, 0xF2, 0xF2);
 pub const ACCENT: Color32 = Color32::from_rgb(0xFF, 0x30, 0x00);
+/// Secondary text: 5.9:1 on white, so it stays readable at caption size.
+pub const SUBTLE: Color32 = Color32::from_gray(100);
+/// Dims the parts of the picture that platform buttons cover.
+pub const DIM: Color32 = Color32::from_black_alpha(110);
 pub const BORDER: f32 = 2.0;
+/// Type scale: every font size in the interface is one of these.
+pub const CAPTION: f32 = 10.0;
+pub const SMALL: f32 = 11.0;
+pub const LABEL: f32 = 12.0;
+pub const BODY: f32 = 13.0;
+pub const LARGE: f32 = 14.0;
+pub const TITLE: f32 = 22.0;
+/// Side panels keep the stage usable: neither too narrow to read nor wide enough to squeeze the picture.
+pub const PANEL_MIN: f32 = 260.0;
+pub const PANEL_MAX: f32 = 400.0;
 pub const PAD: f32 = 12.0;
 
 pub fn bold(size: f32) -> FontId {
@@ -46,10 +60,10 @@ fn fonts() -> FontDefinitions {
 pub fn apply(ctx: &Context) {
     ctx.set_fonts(fonts());
     let text_styles = [
-        (TextStyle::Heading, black(22.0)),
-        (TextStyle::Body, FontId::proportional(13.0)),
-        (TextStyle::Button, bold(12.0)),
-        (TextStyle::Small, FontId::proportional(11.0)),
+        (TextStyle::Heading, black(TITLE)),
+        (TextStyle::Body, FontId::proportional(BODY)),
+        (TextStyle::Button, bold(LABEL)),
+        (TextStyle::Small, FontId::proportional(SMALL)),
         (TextStyle::Monospace, FontId::monospace(12.0)),
     ]
     .into();

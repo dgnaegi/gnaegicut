@@ -1,6 +1,6 @@
 use super::timeline_items::{ADD_ROW, GAP, GUTTER, Layout, RULER};
 use crate::app::{App, Selection};
-use crate::theme::{ACCENT, BLACK, BORDER, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, LARGE, SMALL, WHITE, bold};
 use crate::widgets::{Kind, button};
 use eframe::egui::{Align2, Id, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
@@ -18,7 +18,7 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
         add.center(),
         Align2::CENTER_CENTER,
         "+ NEW TRACK",
-        bold(11.0),
+        bold(SMALL),
         if hot.hovered() { WHITE } else { BLACK },
     );
     if hot.on_hover_cursor(eframe::egui::CursorIcon::PointingHand).clicked() {
@@ -46,7 +46,7 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
             r.center(),
             Align2::CENTER_CENTER,
             format!("{}", ti + 1),
-            bold(14.0),
+            bold(LARGE),
             if active { WHITE } else { BLACK },
         );
     }

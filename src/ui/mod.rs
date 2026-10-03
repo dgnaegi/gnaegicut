@@ -31,7 +31,7 @@ mod transition_panel;
 
 use crate::app::App;
 use crate::drop::{Dragged, take_dragged};
-use crate::theme::{ACCENT, BLACK, BORDER, PAD, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BODY, BORDER, CAPTION, PAD, PANEL_MAX, PANEL_MIN, SUBTLE, WHITE, bold};
 use eframe::egui::{
     Align2, Context, Event, Frame, Id, Key, LayerId, Margin, Modifiers, Order, Panel, Rect, Stroke, StrokeKind, Ui,
     vec2,
@@ -132,9 +132,9 @@ fn cue(ctx: &Context, app: &App) {
     };
     let label = format!("DROP {count} · {how}");
     let at = pointer + vec2(18.0, 18.0);
-    let size = painter.layout_no_wrap(label.clone(), bold(13.0), WHITE).size();
+    let size = painter.layout_no_wrap(label.clone(), bold(BODY), WHITE).size();
     painter.rect_filled(Rect::from_min_size(at, size + vec2(20.0, 14.0)), 0.0, ACCENT);
-    painter.text(at + vec2(10.0, 7.0), Align2::LEFT_TOP, label, bold(13.0), WHITE);
+    painter.text(at + vec2(10.0, 7.0), Align2::LEFT_TOP, label, bold(BODY), WHITE);
 }
 
 pub(crate) use timeline_items::snap;
@@ -157,14 +157,25 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
         .show(ui, |ui| timeline::show(ui, app));
     Panel::right("inspector")
         .frame(frame())
-        .default_size(340.0)
+        .default_size(300.0)
+        .size_range(PANEL_MIN..=PANEL_MAX)
         .show(ui, |ui| inspector::show(ui, app));
     Panel::left("library")
         .frame(frame())
-        .default_size(340.0)
+        .default_size(300.0)
+        .size_range(PANEL_MIN..=PANEL_MAX)
         .show(ui, |ui| library::show(ui, app));
     stage::show(ui, app);
     drag_and_drop(&ctx, app);
+    version_label(&ctx);
+}
+
+/// The version number in the bottom right corner, small and above everything.
+fn version_label(ctx: &Context) {
+    let painter = ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("version")));
+    let at = ctx.content_rect().right_bottom() - vec2(10.0, 6.0);
+    let text = format!("v{}", env!("CARGO_PKG_VERSION"));
+    painter.text(at, Align2::RIGHT_BOTTOM, text, bold(CAPTION), SUBTLE);
 }
 
 #[cfg(test)]

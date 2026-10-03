@@ -6,10 +6,10 @@ use crate::drop::LibraryDrag;
 use crate::patterns;
 use crate::project::{Kind, MediaRef};
 use crate::sound_state::LibraryTab;
-use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, CAPTION, LARGE, MUTED, SMALL, SUBTLE, WHITE, bold};
 use crate::thumbs::BOX;
 use crate::widgets::{Kind as Style, button, section, tabs};
-use eframe::egui::{Align2, Id, Rect, ScrollArea, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
+use eframe::egui::{Align, Align2, Id, Layout, Rect, ScrollArea, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 const ROW: f32 = 72.0;
 
@@ -40,11 +40,18 @@ pub fn show(ui: &mut Ui, app: &mut App) {
     }
 }
 
+/// The media list, with the paste button at the very bottom of the panel.
 fn files(ui: &mut Ui, app: &mut App) {
-    if button(ui, "Paste screenshot", Style::Plain).clicked() && !app.paste_image() {
-        app.status = "No image on the clipboard".into();
-    }
-    ui.add_space(6.0);
+    ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+        if button(ui, "Paste screenshot", Style::Plain).clicked() && !app.paste_image() {
+            app.status = "No image on the clipboard".into();
+        }
+        ui.add_space(6.0);
+        ui.with_layout(Layout::top_down(Align::Min), |ui| list(ui, app));
+    });
+}
+
+fn list(ui: &mut Ui, app: &mut App) {
     section(ui, &format!("Media ({})", app.project.media.len()));
     if app.project.media.is_empty() {
         return;
@@ -95,7 +102,7 @@ fn files(ui: &mut Ui, app: &mut App) {
                 pos2(text_x, rect.top() + 10.0),
                 Align2::LEFT_TOP,
                 media.name.to_uppercase(),
-                bold(11.0),
+                bold(SMALL),
                 BLACK,
             );
             let meta = format!("{} · {}×{}", duration(media), media.src_w, media.src_h);
@@ -103,8 +110,8 @@ fn files(ui: &mut Ui, app: &mut App) {
                 pos2(text_x, rect.top() + 28.0),
                 Align2::LEFT_TOP,
                 meta,
-                bold(10.0),
-                eframe::egui::Color32::from_gray(110),
+                bold(CAPTION),
+                SUBTLE,
             );
             let usage = if used == 0 {
                 "NOT USED".to_string()
@@ -115,7 +122,7 @@ fn files(ui: &mut Ui, app: &mut App) {
                 pos2(text_x, rect.top() + 42.0),
                 Align2::LEFT_TOP,
                 usage,
-                bold(10.0),
+                bold(CAPTION),
                 if used == 0 { ACCENT } else { BLACK },
             );
             // A small × in the corner takes the file out of the library.
@@ -128,7 +135,7 @@ fn files(ui: &mut Ui, app: &mut App) {
                 cross.center(),
                 Align2::CENTER_CENTER,
                 "×",
-                bold(14.0),
+                bold(LARGE),
                 if hot { WHITE } else { BLACK },
             );
             if cross_resp.clicked() {

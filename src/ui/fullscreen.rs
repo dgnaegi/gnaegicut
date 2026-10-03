@@ -2,7 +2,7 @@
 //! Click the picture or press Space to play and pause, Esc or the cross (or F) to leave.
 
 use crate::app::App;
-use crate::theme::{ACCENT, BLACK, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, TITLE, WHITE, bold};
 use eframe::egui::{Align2, CentralPanel, Frame, Id, Rect, Sense, Ui, ViewportCommand, pos2, vec2};
 
 impl App {
@@ -46,7 +46,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
         let hot = exit.hovered();
         let p = ui.painter();
         p.rect_filled(cross, 0.0, if hot { ACCENT } else { BLACK });
-        p.text(cross.center(), Align2::CENTER_CENTER, "×", bold(22.0), WHITE);
+        p.text(cross.center(), Align2::CENTER_CENTER, "×", bold(TITLE), WHITE);
         if exit.clicked() {
             app.set_fullscreen(false);
         }

@@ -3,9 +3,9 @@
 use crate::app::App;
 use crate::drop::SoundDrag;
 use crate::sounds::{Sound, Source};
-use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BODY, BORDER, CAPTION, MUTED, SMALL, SUBTLE, WHITE, bold};
 use crate::widgets::{Kind, button, caps, chip, warn};
-use eframe::egui::{Align2, Color32, Id, Key, Rect, ScrollArea, Sense, Stroke, StrokeKind, TextEdit, Ui, pos2, vec2};
+use eframe::egui::{Align2, Id, Key, Rect, ScrollArea, Sense, Stroke, StrokeKind, TextEdit, Ui, pos2, vec2};
 
 const ROW: f32 = 48.0;
 
@@ -92,7 +92,7 @@ fn row(ui: &mut Ui, app: &mut App, sound: Sound) {
     p.rect_stroke(rect, 0.0, Stroke::new(BORDER, BLACK), StrokeKind::Inside);
     p.rect_filled(play, 0.0, fill);
     p.rect_stroke(play, 0.0, Stroke::new(BORDER, BLACK), StrokeKind::Inside);
-    p.text(play.center(), Align2::CENTER_CENTER, symbol, bold(13.0), ink);
+    p.text(play.center(), Align2::CENTER_CENTER, symbol, bold(BODY), ink);
 
     let text_area = Rect::from_min_max(rect.min, pos2(play.left() - 4.0, rect.bottom())).shrink(4.0);
     let meta = format!("{} · {} · {}", sound.duration_label(), sound.license, sound.creator);
@@ -101,15 +101,15 @@ fn row(ui: &mut Ui, app: &mut App, sound: Sound) {
         pos2(rect.left() + 8.0, rect.top() + 8.0),
         Align2::LEFT_TOP,
         sound.title.to_uppercase(),
-        bold(11.0),
+        bold(SMALL),
         BLACK,
     );
     clipped.text(
         pos2(rect.left() + 8.0, rect.top() + 26.0),
         Align2::LEFT_TOP,
         meta,
-        bold(10.0),
-        Color32::from_gray(110),
+        bold(CAPTION),
+        SUBTLE,
     );
     if play_resp.clicked() && !busy {
         app.preview_sound(sound);

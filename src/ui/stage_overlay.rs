@@ -1,6 +1,6 @@
 use crate::project::Aspect;
-use crate::theme::{ACCENT, BORDER, bold};
-use eframe::egui::{Align2, Color32, Painter, Rect, Stroke, StrokeKind, pos2};
+use crate::theme::{ACCENT, BORDER, CAPTION, DIM, bold};
+use eframe::egui::{Align2, Painter, Rect, Stroke, StrokeKind, pos2};
 
 /// Dims the areas covered by platform UI and outlines what stays visible.
 pub fn safe_zone(p: &Painter, frame: Rect, aspect: Aspect) -> Rect {
@@ -9,7 +9,7 @@ pub fn safe_zone(p: &Painter, frame: Rect, aspect: Aspect) -> Rect {
         pos2(frame.left() + l * frame.width(), frame.top() + t * frame.height()),
         pos2(frame.right() - r * frame.width(), frame.bottom() - b * frame.height()),
     );
-    let dim = Color32::from_black_alpha(110);
+    let dim = DIM;
     p.rect_filled(Rect::from_min_max(frame.min, pos2(frame.right(), safe.top())), 0.0, dim);
     p.rect_filled(
         Rect::from_min_max(pos2(frame.left(), safe.bottom()), frame.max),
@@ -31,7 +31,7 @@ pub fn safe_zone(p: &Painter, frame: Rect, aspect: Aspect) -> Rect {
         safe.left_top() + [6.0, 4.0].into(),
         Align2::LEFT_TOP,
         "SAFE ZONE",
-        bold(10.0),
+        bold(CAPTION),
         ACCENT,
     );
     safe

@@ -103,14 +103,15 @@ impl App {
     }
 
     pub fn export(&mut self) {
-        if self.project.is_empty() {
+        if self.project.is_empty() || self.busy.is_some() {
             return;
         }
         let Some(path) = rfd::FileDialog::new().set_file_name("export.mp4").save_file() else {
             return;
         };
         let project = self.project.snapshot();
-        self.status = "Exporting…".into();
+        self.status.clear();
+        self.busy = Some("Exporting");
         self.spawn(move |tx| {
             let msg = match export(&project, &path) {
                 Ok(()) => {
@@ -124,24 +125,29 @@ impl App {
                 Err(e) => format!("Export failed: {e}"),
             };
             let _ = tx.send(Event::Status(msg));
+            let _ = tx.send(Event::Done);
         });
     }
 
     pub fn transcribe(&mut self) {
-        if self.project.is_empty() {
+        if self.project.is_empty() || self.busy.is_some() {
             return;
         }
         let project = self.project.snapshot();
         let timing = project.timing_fingerprint();
-        self.status = "Transcribing…".into();
-        self.spawn(move |tx| match whisper::transcribe(&project) {
-            Ok(captions) => {
-                let _ = tx.send(Event::Status(format!("{} captions", captions.len())));
-                let _ = tx.send(Event::Captions(captions, timing));
+        self.status.clear();
+        self.busy = Some("Transcribing");
+        self.spawn(move |tx| {
+            match whisper::transcribe(&project) {
+                Ok(captions) => {
+                    let _ = tx.send(Event::Status(format!("{} captions", captions.len())));
+                    let _ = tx.send(Event::Captions(captions, timing));
+                }
+                Err(e) => {
+                    let _ = tx.send(Event::Status(format!("Captions failed: {e}")));
+                }
             }
-            Err(e) => {
-                let _ = tx.send(Event::Status(format!("Captions failed: {e}")));
-            }
+            let _ = tx.send(Event::Done);
         });
     }
 }

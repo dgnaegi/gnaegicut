@@ -30,6 +30,7 @@ mod thumbs;
 mod ui;
 mod waveforms;
 mod widgets;
+mod widgets_input;
 
 use eframe::egui;
 
@@ -44,7 +45,7 @@ fn main() -> eframe::Result {
         .with_title("GnaegiCut")
         .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).expect("valid icon"))
         .with_inner_size([1280.0, 820.0])
-        .with_min_inner_size([900.0, 600.0]);
+        .with_min_inner_size([1100.0, 640.0]);
     eframe::run_native(
         "GnaegiCut",
         eframe::NativeOptions {

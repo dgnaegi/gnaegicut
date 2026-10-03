@@ -7,6 +7,8 @@ use crate::sounds::Sound;
 /// Messages background jobs send back to the UI thread.
 pub enum Event {
     Status(String),
+    /// The background job (export, transcription) has finished, whatever its result.
+    Done,
     /// New captions and the timing fingerprint of the edit they were made from.
     Captions(Vec<Caption>, u64),
     Fonts(Box<Fonts>),

@@ -1,7 +1,7 @@
 //! Geometry of the timeline and the draggable item blocks.
 
 use crate::project::{Item, Kind};
-use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, MUTED, SMALL, WHITE, bold};
 use eframe::egui::{Align2, Color32, CursorIcon, Id, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 pub const GUTTER: f32 = 56.0;
@@ -104,7 +104,7 @@ pub fn show(ui: &mut Ui, lay: &Layout, track: usize, item: &Item, selected: bool
         rect.left_top() + [8.0, 6.0].into(),
         Align2::LEFT_TOP,
         label,
-        bold(11.0),
+        bold(SMALL),
         ink,
     );
     resp.on_hover_cursor(CursorIcon::Grab)

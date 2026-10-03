@@ -4,7 +4,7 @@
 use super::timeline_items::{GAP, Layout, snap};
 use super::timeline_parts::CAPTION_LANE;
 use crate::app::{App, Selection};
-use crate::theme::{ACCENT, BLACK, BORDER, WHITE, bold};
+use crate::theme::{ACCENT, BLACK, BORDER, CAPTION, WHITE, bold};
 use eframe::egui::{Align2, CursorIcon, Id, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 const GRIP: f32 = 7.0; // width of the draggable strip at each end of a block
@@ -33,7 +33,7 @@ pub fn show(ui: &mut Ui, app: &mut App, lay: &Layout) {
             r.left_center() + vec2(8.0, 0.0),
             Align2::LEFT_CENTER,
             &c.text,
-            bold(10.0),
+            bold(CAPTION),
             ink,
         );
 

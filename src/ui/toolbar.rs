@@ -2,15 +2,15 @@ use super::toolbar_icons;
 use crate::app::App;
 use crate::logo;
 use crate::project::Aspect;
-use crate::theme::black;
-use crate::widgets::{Kind, button, segmented};
-use eframe::egui::{Align, Layout, RichText, Sense, Ui, vec2};
+use crate::theme::{TITLE, black};
+use crate::widgets::{Kind, busy, button, segmented};
+use eframe::egui::{Align, Label, Layout, RichText, Sense, Ui, vec2};
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     ui.horizontal(|ui| {
         let (rect, _) = ui.allocate_exact_size(vec2(36.0, 36.0), Sense::hover());
         logo::paint(ui.painter(), rect);
-        ui.label(RichText::new("GNAEGICUT").font(black(22.0)));
+        ui.label(RichText::new("GNAEGICUT").font(black(TITLE)));
         ui.add_space(24.0);
 
         let aspects: Vec<_> = Aspect::ALL.iter().map(|a| (*a, a.label())).collect();
@@ -31,7 +31,12 @@ pub fn show(ui: &mut Ui, app: &mut App) {
             if button(ui, "Export MP4", Kind::Cta).clicked() {
                 app.export();
             }
-            ui.label(&app.status);
+            match app.busy {
+                Some(what) => busy(ui, what),
+                None => {
+                    ui.add(Label::new(&app.status).truncate()); // a long path must not push the buttons away
+                }
+            }
         });
     });
 }
