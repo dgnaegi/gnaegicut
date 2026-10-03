@@ -15,6 +15,7 @@ mod persist;
 mod player;
 mod preview;
 mod project;
+mod screenshot;
 mod session;
 mod settle;
 mod sound_actions;

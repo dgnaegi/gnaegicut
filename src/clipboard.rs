@@ -30,8 +30,12 @@ impl App {
         self.ctx.copy_text(text);
     }
 
-    /// Pastes the copied item at the playhead, on the selected item's track (or the active one).
+    /// Pastes an image from the system clipboard (a screenshot) if there is one, otherwise the copied item at the
+    /// playhead, on the selected item's track (or the active one).
     pub fn paste(&mut self) {
+        if self.paste_image() {
+            return;
+        }
         let Some(item) = self.clipboard.clone() else { return };
         self.stop();
         let track = self

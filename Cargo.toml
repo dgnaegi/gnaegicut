@@ -1,11 +1,12 @@
 [package]
 name = "gnaegicut"
-version = "0.3.3"
+version = "0.4.0"
 edition = "2024"
 description = "A CapCut alternative that Claude built because I did not like CapCut"
 license = "WTFPL"
 
 [dependencies]
+arboard = "3.6.1"
 eframe = "0.36.2"
 fontdb = "0.24.0"
 fontdue = "0.9.4"

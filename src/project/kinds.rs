@@ -51,16 +51,24 @@ pub enum Transition {
 }
 
 impl Transition {
-    /// The choices for an item's own intro / outro.
-    pub const BASIC: [Transition; 7] = [
+    /// The choices for an item's own intro: the basic ones plus the entrances that only bring an item in.
+    pub const INTRO: [Transition; 10] = [
         Transition::Fade,
+        Transition::Zoom,
+        Transition::Spin,
+        Transition::WipeRight,
+        Transition::Circle,
         Transition::SlideLeft,
         Transition::SlideRight,
         Transition::SlideUp,
         Transition::SlideDown,
         Transition::Flash,
-        Transition::Glitch,
     ];
+
+    /// Entrances that cannot be played backwards: an item that comes in this way fades out instead.
+    pub fn intro_only(self) -> bool {
+        self.is_reveal() || matches!(self, Transition::Zoom | Transition::Spin)
+    }
 
     pub fn label(self) -> &'static str {
         match self {

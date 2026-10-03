@@ -1,7 +1,7 @@
 //! The inspector tabs that edit one item: placement, motion, audio and timing.
 
 use crate::app::App;
-use crate::project::{Kind, Look, Transition, ZoomEffect};
+use crate::project::{Crop, Kind, Look, Transition, ZoomEffect, crop};
 use crate::widgets::{Kind as Btn, button, caps, chip, choice_grid, section};
 use eframe::egui::{Slider, Ui, vec2};
 
@@ -36,6 +36,34 @@ pub fn placement(ui: &mut Ui, app: &mut App, id: u64) {
             it.rotation = 0.0;
         }
     });
+    if it.kind != Kind::Text && it.kind != Kind::Audio {
+        crop(ui, it);
+    }
+}
+
+/// Cutting away the edges of a picture or video: one slider per side.
+fn crop(ui: &mut Ui, it: &mut crate::project::Item) {
+    ui.add_space(12.0);
+    section(ui, "Crop");
+    let before = it.crop;
+    for (side, label) in [
+        (&mut it.crop.left, "left"),
+        (&mut it.crop.right, "right"),
+        (&mut it.crop.top, "top"),
+        (&mut it.crop.bottom, "bottom"),
+    ] {
+        ui.add(
+            Slider::new(side, 0.0..=crop::MOST)
+                .text(label)
+                .custom_formatter(percent),
+        );
+    }
+    if it.crop != before {
+        it.crop = it.crop.limited();
+    }
+    if !it.crop.is_none() && button(ui, "Remove crop", Btn::Plain).clicked() {
+        it.crop = Crop::default();
+    }
 }
 
 /// Everything that makes a clip move or feel punchy: zoom, look, shake, and its own intro and outro.
@@ -67,7 +95,7 @@ pub fn motion(ui: &mut Ui, app: &mut App, id: u64) {
     );
     ui.add_space(12.0);
     section(ui, "Intro / outro");
-    let kinds: Vec<_> = Transition::BASIC.iter().map(|t| (*t, t.label())).collect();
+    let kinds: Vec<_> = Transition::INTRO.iter().map(|t| (*t, t.label())).collect();
     choice_grid(ui, &mut it.transition, &kinds);
     ui.add(Slider::new(&mut it.fade_in, 0.0..=2.0).text("in").suffix("s"));
     ui.add(Slider::new(&mut it.fade_out, 0.0..=2.0).text("out").suffix("s"));

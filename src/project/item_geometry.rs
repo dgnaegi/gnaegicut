@@ -7,6 +7,12 @@ fn even(v: f32) -> u32 {
 }
 
 impl Item {
+    /// The picture's size in pixels after cropping.
+    fn view(&self) -> (f32, f32) {
+        let (kw, kh) = self.crop.kept();
+        (self.src_w as f32 * kw, self.src_h as f32 * kh)
+    }
+
     /// How much the picture is magnified to fit the frame. Text is rendered at its real pixel size for the frame
     /// (the font size is in frame pixels), so it is never stretched: then the font size really sets how big it is
     /// and the picture stays sharp.
@@ -15,13 +21,13 @@ impl Item {
             return 1.0;
         }
         let (w, h) = aspect.size();
-        (w as f32 / self.src_w as f32).min(h as f32 / self.src_h as f32)
+        (w as f32 / self.view().0).min(h as f32 / self.view().1)
     }
 
     /// The `scale` at which the item covers the whole frame.
     pub fn cover_scale(&self, aspect: Aspect) -> f32 {
         let (w, h) = aspect.size();
-        let cover = (w as f32 / self.src_w as f32).max(h as f32 / self.src_h as f32);
+        let cover = (w as f32 / self.view().0).max(h as f32 / self.view().1);
         cover / self.contain(aspect)
     }
 
@@ -29,7 +35,7 @@ impl Item {
     pub fn frac(&self, aspect: Aspect) -> (f32, f32) {
         let (w, h) = aspect.size();
         let k = self.contain(aspect) * self.scale;
-        (self.src_w as f32 * k / w as f32, self.src_h as f32 * k / h as f32)
+        (self.view().0 * k / w as f32, self.view().1 * k / h as f32)
     }
 
     /// Box size in pixels of a `w`x`h` frame; even, because yuv420 requires it.

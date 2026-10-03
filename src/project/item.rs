@@ -1,9 +1,8 @@
 //! One placed piece of media: a video or image on a track, with its trim, position and zoom.
 
 use super::kinds::Phase;
-use super::{Join, Kind, Look, Transition, ZoomEffect};
+use super::{Crop, Join, Kind, Look, Transition, ZoomEffect};
 use serde::{Deserialize, Serialize};
-use std::hash::Hasher;
 
 pub const IMAGE_SECS: f64 = 3.0; // default length of a dropped image
 const IMAGE_MAX_SECS: f64 = 600.0;
@@ -37,6 +36,9 @@ pub struct Item {
     /// Camera shake, 0 (none) to 1 (violent).
     #[serde(default)]
     pub shake: f32,
+    /// The part of the picture that is cut away on each side.
+    #[serde(default)]
+    pub crop: Crop,
     /// Colour treatment.
     #[serde(default)]
     pub look: Look,
@@ -101,6 +103,7 @@ impl Item {
             effect: ZoomEffect::None,
             amount: 0.3,
             shake: 0.0,
+            crop: Crop::default(),
             look: Look::None,
             reversed: false,
             cut: 0.0,
@@ -138,66 +141,16 @@ impl Item {
         })
     }
 
-    /// How the item leaves: a join's effect if it has one, otherwise its own outro. A wipe only brings things in,
-    /// so an item that wipes in fades out.
+    /// How the item leaves: a join's effect if it has one, otherwise its own outro. A wipe, zoom or spin only brings
+    /// things in, so an item that comes in like that fades out.
     pub fn exit(&self) -> Phase {
         self.link_out.unwrap_or(Phase {
-            effect: if self.transition.is_reveal() {
+            effect: if self.transition.intro_only() {
                 Transition::Fade
             } else {
                 self.transition
             },
             len: self.fade_out,
         })
-    }
-
-    /// ffmpeg input options that open exactly the trimmed part of this item.
-    pub fn input_args(&self) -> Vec<String> {
-        let (len, path) = (format!("{:.3}", self.len()), self.path.clone());
-        if self.kind.is_still() {
-            let looped = ["-loop", "1", "-framerate", "30", "-t"].map(String::from);
-            looped.into_iter().chain([len, "-i".into(), path]).collect()
-        } else {
-            [
-                "-ss".into(),
-                format!("{:.3}", self.start),
-                "-t".into(),
-                len,
-                "-i".into(),
-                path,
-            ]
-            .into()
-        }
-    }
-
-    /// Feeds everything that changes how this item looks or sounds into `h`.
-    pub fn hash_into(&self, h: &mut impl Hasher) {
-        h.write(self.path.as_bytes());
-        for v in [self.start, self.end, self.at, self.cut] {
-            h.write_u64(v.to_bits());
-        }
-        for v in [
-            self.x,
-            self.y,
-            self.scale,
-            self.rotation,
-            self.zoom,
-            self.amount,
-            self.shake,
-            self.volume,
-            self.fade_in,
-            self.fade_out,
-        ] {
-            h.write_u32(v.to_bits());
-        }
-        h.write_u8(self.effect as u8);
-        h.write_u8(self.enhance as u8);
-        h.write_u8(self.transition as u8);
-        h.write_u8(self.look as u8);
-        h.write_u8(self.reversed as u8);
-        if let Some(j) = self.join {
-            h.write_u8(j.effect as u8);
-            h.write_u32(j.len.to_bits());
-        }
     }
 }

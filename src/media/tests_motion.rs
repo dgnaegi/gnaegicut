@@ -142,3 +142,10 @@ fn an_item_that_wipes_in_fades_out_instead_of_cutting() {
     let leaving = at(&p, 2.5, 0.5, 0.5);
     assert!((80..180).contains(&leaving[0]), "half faded out, got {leaving:?}");
 }
+
+#[test]
+fn a_zoom_entrance_fades_out_instead_of_cutting() {
+    let p = filling(Transition::Zoom, 1.0, 1.0);
+    let leaving = at(&p, 2.5, 0.5, 0.5);
+    assert!((80..180).contains(&leaving[0]), "half faded out, got {leaving:?}");
+}

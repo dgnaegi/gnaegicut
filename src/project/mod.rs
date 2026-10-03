@@ -2,6 +2,7 @@
 
 mod aspect;
 mod caption;
+pub mod crop;
 mod edit;
 mod fit;
 mod freeze;
@@ -9,6 +10,7 @@ mod item;
 mod item_audio;
 mod item_fx;
 mod item_geometry;
+mod item_io;
 mod item_motion;
 mod join;
 mod join_effects;
@@ -29,6 +31,7 @@ mod zoom_effect;
 
 pub use aspect::Aspect;
 pub use caption::{Caption, CaptionLayout, CaptionStyle};
+pub use crop::Crop;
 pub use item::Item;
 pub use item_motion::ease_out;
 pub use join_effects::{Join, JoinEffect};

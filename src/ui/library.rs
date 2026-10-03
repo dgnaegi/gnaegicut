@@ -8,7 +8,7 @@ use crate::project::{Kind, MediaRef};
 use crate::sound_state::LibraryTab;
 use crate::theme::{ACCENT, BLACK, BORDER, MUTED, WHITE, bold};
 use crate::thumbs::BOX;
-use crate::widgets::{section, tabs};
+use crate::widgets::{Kind as Style, button, section, tabs};
 use eframe::egui::{Align2, Id, Rect, ScrollArea, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 const ROW: f32 = 72.0;
@@ -37,6 +37,10 @@ pub fn show(ui: &mut Ui, app: &mut App) {
 }
 
 fn files(ui: &mut Ui, app: &mut App) {
+    if button(ui, "Paste screenshot", Style::Plain).clicked() && !app.paste_image() {
+        app.status = "No image on the clipboard".into();
+    }
+    ui.add_space(6.0);
     section(ui, &format!("Media ({})", app.project.media.len()));
     if app.project.media.is_empty() {
         return;
