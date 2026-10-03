@@ -1,6 +1,7 @@
 //! The inspector tabs that edit one item: placement, motion, audio and timing.
 
 use crate::app::App;
+use crate::project::edge::{MAX_BORDER, MAX_FEATHER};
 use crate::project::{Crop, Kind, Look, Transition, ZoomEffect, crop};
 use crate::widgets::{Kind as Btn, button, caps, chip, choice, percent, percent_slider, section};
 use eframe::egui::{Slider, Ui, vec2};
@@ -34,6 +35,26 @@ pub fn placement(ui: &mut Ui, app: &mut App, id: u64) {
     });
     if it.kind != Kind::Text && it.kind != Kind::Audio {
         crop(ui, it);
+        edge(ui, it);
+    }
+}
+
+/// A soft fade around the picture, and a border.
+fn edge(ui: &mut Ui, it: &mut crate::project::Item) {
+    ui.add_space(12.0);
+    section(ui, "Edge");
+    ui.add(
+        Slider::new(&mut it.edge.feather, 0.0..=MAX_FEATHER)
+            .text("fade")
+            .custom_formatter(percent),
+    );
+    ui.add(
+        Slider::new(&mut it.edge.border, 0.0..=MAX_BORDER)
+            .text("border")
+            .custom_formatter(percent),
+    );
+    if it.edge.border > 0.0 {
+        ui.color_edit_button_srgb(&mut it.edge.border_color);
     }
 }
 

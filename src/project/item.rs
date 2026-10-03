@@ -1,7 +1,7 @@
 //! One placed piece of media: a video or image on a track, with its trim, position and zoom.
 
 use super::kinds::Phase;
-use super::{Crop, Join, Kind, Look, Transition, ZoomEffect};
+use super::{Crop, Edge, Join, Kind, Look, Transition, ZoomEffect};
 use serde::{Deserialize, Serialize};
 
 pub const IMAGE_SECS: f64 = 3.0; // default length of a dropped image
@@ -39,6 +39,9 @@ pub struct Item {
     /// The part of the picture that is cut away on each side.
     #[serde(default)]
     pub crop: Crop,
+    /// A soft fade and a border at the edge of the picture.
+    #[serde(default)]
+    pub edge: Edge,
     /// Colour treatment.
     #[serde(default)]
     pub look: Look,
@@ -107,6 +110,7 @@ impl Item {
             amount: 0.3,
             shake: 0.0,
             crop: Crop::default(),
+            edge: Edge::default(),
             look: Look::None,
             reversed: false,
             cut: 0.0,

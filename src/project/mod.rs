@@ -3,6 +3,7 @@
 mod aspect;
 mod caption;
 pub mod crop;
+pub mod edge;
 mod edit;
 mod fit;
 mod freeze;
@@ -32,6 +33,7 @@ mod zoom_effect;
 pub use aspect::Aspect;
 pub use caption::{Caption, CaptionLayout, CaptionStyle};
 pub use crop::Crop;
+pub use edge::Edge;
 pub use item::Item;
 pub use item_motion::ease_out;
 pub use join_effects::{Join, JoinEffect};

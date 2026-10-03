@@ -5,7 +5,7 @@
 //! (fast seeking), scaled to its box, optionally zoomed inside it, shifted to its timeline
 //! position with `setpts`, and overlaid. Audio is delayed into place and mixed.
 
-use super::{ass, reveal};
+use super::{ass, edge_fx, reveal};
 use crate::project::{Item, Kind, Project};
 
 pub const VIDEO: &str = "[vout]";
@@ -108,8 +108,8 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
     if let Some(g) = &grow {
         pre.push(format!("scale=w='{bw}*({g})':h='{bh}*({g})':eval=frame"));
     }
-    // After the box: rotation, fades, and shifting to the item's place on the timeline.
-    let mut post = vec![];
+    // After the box: border, rotation, fades, and shifting to the item's place on the timeline.
+    let mut post: Vec<String> = item.edge.border_filter((bw, bh)).into_iter().collect();
     if item.rotation != 0.0 || item.spins() {
         post.push(format!("rotate=a='{}':ow={rw}:oh={rh}:c=none", item.rotation_expr()));
     }
@@ -122,18 +122,26 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
         (x, y)
     };
     let overlay = format!("[b{layer}][v{i}]overlay=x='{x}':y='{y}':eof_action=pass[{out}]");
-    match reveal::mask(i, item, (bw, bh)) {
-        None => format!(
-            "[{i}:v]{}[v{i}];{overlay}",
-            pre.into_iter().chain(post).collect::<Vec<_>>().join(",")
-        ),
-        Some(mask) => format!(
-            "[{i}:v]{}[bx{i}];{mask};{};[bm{i}]{}[v{i}];{overlay}",
-            pre.join(","),
-            reveal::apply(i, item),
-            post.join(",")
-        ),
+    // Pictures with a soft edge or a reveal pass through masks on the way; otherwise it is one straight chain.
+    let (feather, reveal) = (edge_fx::mask(i, item, (bw, bh)), reveal::mask(i, item, (bw, bh)));
+    if feather.is_none() && reveal.is_none() {
+        let chain = pre.into_iter().chain(post).collect::<Vec<_>>().join(",");
+        return format!("[{i}:v]{chain}[v{i}];{overlay}");
     }
+    let mut parts = vec![format!("[{i}:v]{}[bx{i}]", pre.join(","))];
+    let mut now = format!("bx{i}");
+    if let Some(mask) = feather {
+        let out = format!("bf{i}");
+        parts.extend([mask, edge_fx::multiply(&now, &format!("fm{i}"), &out)]);
+        now = out;
+    }
+    if let Some(mask) = reveal {
+        parts.extend([mask, reveal::apply(i, &now)]);
+        now = format!("bm{i}");
+    }
+    parts.push(format!("[{now}]{}[v{i}]", post.join(",")));
+    parts.push(overlay);
+    parts.join(";")
 }
 
 /// Silence of the full length plus every item's audio, each delayed to its start.

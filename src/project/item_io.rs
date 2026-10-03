@@ -50,6 +50,7 @@ impl Item {
         h.write_u8(self.look as u8);
         h.write_u8(self.reversed as u8);
         self.crop.hash_into(h);
+        self.edge.hash_into(h);
         if let Some(j) = self.join {
             h.write_u8(j.effect as u8);
             h.write_u32(j.len.to_bits());

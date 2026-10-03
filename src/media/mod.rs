@@ -1,6 +1,7 @@
 //! Everything that talks to ffmpeg, ffprobe or whisper. The UI never builds a command itself.
 
 pub mod ass;
+mod edge_fx;
 pub mod export;
 pub mod frame;
 pub mod graph;
@@ -17,6 +18,8 @@ mod tests_bar;
 mod tests_captions;
 #[cfg(test)]
 mod tests_crop;
+#[cfg(test)]
+mod tests_edge;
 #[cfg(test)]
 mod tests_fx;
 #[cfg(test)]
