@@ -10,6 +10,7 @@ pub enum LibraryTab {
     Files,
     Sounds,
     Text,
+    Captions,
 }
 
 #[derive(Default)]

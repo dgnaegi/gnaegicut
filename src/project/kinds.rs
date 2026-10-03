@@ -65,6 +65,16 @@ impl Transition {
         Transition::Flash,
     ];
 
+    /// The choices for an item's own outro.
+    pub const OUTRO: [Transition; 6] = [
+        Transition::Fade,
+        Transition::SlideLeft,
+        Transition::SlideRight,
+        Transition::SlideUp,
+        Transition::SlideDown,
+        Transition::Flash,
+    ];
+
     /// Entrances that cannot be played backwards: an item that comes in this way fades out instead.
     pub fn intro_only(self) -> bool {
         self.is_reveal() || matches!(self, Transition::Zoom | Transition::Spin)

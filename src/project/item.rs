@@ -63,6 +63,9 @@ pub struct Item {
     pub fade_in: f32,
     pub fade_out: f32,
     pub transition: Transition,
+    /// The outro; `None` means the same as the intro (how older projects were saved).
+    #[serde(default)]
+    pub outro: Option<Transition>,
     /// Where a downloaded sound came from and how to credit it (a licence requirement for most free sounds).
     #[serde(default)]
     pub credit: Option<String>,
@@ -118,6 +121,7 @@ impl Item {
             fade_in: 0.0,
             fade_out: 0.0,
             transition: Transition::Fade,
+            outro: None,
             credit: None,
             join: None,
             link_in: None,
@@ -141,15 +145,19 @@ impl Item {
         })
     }
 
-    /// How the item leaves: a join's effect if it has one, otherwise its own outro. A wipe, zoom or spin only brings
-    /// things in, so an item that comes in like that fades out.
+    /// The item's own outro. Projects from before intro and outro were separate leave it unset and use the intro's
+    /// effect; one that only works as an entrance (wipe, zoom, spin) fades out instead.
+    pub fn outro_effect(&self) -> Transition {
+        match self.outro.unwrap_or(self.transition) {
+            t if t.intro_only() => Transition::Fade,
+            t => t,
+        }
+    }
+
+    /// How the item leaves: a join's effect if it has one, otherwise its own outro.
     pub fn exit(&self) -> Phase {
         self.link_out.unwrap_or(Phase {
-            effect: if self.transition.intro_only() {
-                Transition::Fade
-            } else {
-                self.transition
-            },
+            effect: self.outro_effect(),
             len: self.fade_out,
         })
     }

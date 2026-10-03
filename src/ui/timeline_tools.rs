@@ -1,4 +1,4 @@
-//! The tool bar above the tracks: undo, edit tools for the selected clip, magnet, zoom and the clock.
+//! The tool bar above the tracks: edit tools for the selected clip, magnet, zoom and the clock.
 
 use super::timeline_zoom::{MAX_ZOOM, MIN_ZOOM};
 use crate::app::App;
@@ -11,18 +11,8 @@ fn tool(ui: &mut Ui, label: &str, on: bool) -> bool {
 
 pub(super) fn show(ui: &mut Ui, app: &mut App) {
     ui.horizontal_wrapped(|ui| {
-        if tool(ui, "Undo", false) {
-            app.undo();
-        }
-        if tool(ui, "Redo", false) {
-            app.redo();
-        }
-        ui.separator();
         if tool(ui, "Split (S)", false) {
             app.split();
-        }
-        if tool(ui, "Delete", false) {
-            app.delete();
         }
         ui.separator();
         if tool(ui, "Freeze", false) {

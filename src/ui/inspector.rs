@@ -1,8 +1,8 @@
-use super::{captions, item_panel, text_panel, transition_panel};
+use super::{item_panel, text_panel, transition_panel};
 use crate::app::{App, Tab};
 use crate::patterns;
 use crate::project::Kind;
-use crate::widgets::tabs;
+use crate::widgets::{caps, tabs};
 use eframe::egui::{ScrollArea, Ui};
 
 /// The tabs that make sense for the current selection, in display order.
@@ -23,13 +23,16 @@ fn available(app: &App) -> Vec<(Tab, &'static str)> {
             list.push((Tab::Transition, "Transition"));
         }
     }
-    list.push((Tab::Captions, "Captions"));
     list
 }
 
 pub fn show(ui: &mut Ui, app: &mut App) {
     patterns::dots(&ui.painter_at(ui.max_rect()), ui.max_rect());
     let list = available(app);
+    if list.is_empty() {
+        caps(ui, "Select a clip to edit it");
+        return;
+    }
     if !list.iter().any(|(tab, _)| *tab == app.tab) {
         app.tab = list[0].0; // e.g. the Audio tab after selecting an image
     }
@@ -45,9 +48,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
             (Tab::Audio, Some(id)) => item_panel::audio(ui, app, id),
             (Tab::Time, Some(id)) => item_panel::timing(ui, app, id),
             (Tab::Transition, Some(id)) => transition_panel::show(ui, app, id),
-            _ => {
-                captions::show(ui, app);
-            }
+            _ => {}
         }
     });
 }

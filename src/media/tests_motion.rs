@@ -149,3 +149,19 @@ fn a_zoom_entrance_fades_out_instead_of_cutting() {
     let leaving = at(&p, 2.5, 0.5, 0.5);
     assert!((80..180).contains(&leaving[0]), "half faded out, got {leaving:?}");
 }
+
+#[test]
+fn intro_and_outro_are_chosen_separately() {
+    let mut p = filling(Transition::SlideLeft, 1.0, 1.0);
+    p.tracks[0].items[0].outro = Some(Transition::Fade);
+    assert!(
+        near(at(&p, 1.5, 0.1, 0.5), RED) && near(at(&p, 1.5, 0.9, 0.5), RED),
+        "in the middle"
+    );
+    let leaving = at(&p, 2.5, 0.5, 0.5);
+    assert!(
+        (80..180).contains(&leaving[0]),
+        "fades out although it slid in, got {leaving:?}"
+    );
+    assert!(near(at(&p, 0.02, 0.5, 0.5), BLACK), "still slides in from the right");
+}

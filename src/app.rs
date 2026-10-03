@@ -105,13 +105,11 @@ impl App {
         }
     }
 
-    /// Changes the selection and brings the inspector to the matching tab.
+    /// Changes the selection; a caption brings up the captions tab on the left.
     pub fn select(&mut self, selection: Selection) {
         self.selection = selection;
-        match selection {
-            Selection::Captions | Selection::Caption(_) => self.tab = Tab::Captions,
-            Selection::Item(_) if self.tab == Tab::Captions => self.tab = Tab::Place,
-            _ => {}
+        if matches!(selection, Selection::Captions | Selection::Caption(_)) {
+            self.library_tab = LibraryTab::Captions;
         }
     }
 

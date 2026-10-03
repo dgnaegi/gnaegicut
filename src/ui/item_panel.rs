@@ -94,11 +94,18 @@ pub fn motion(ui: &mut Ui, app: &mut App, id: u64) {
             .custom_formatter(percent),
     );
     ui.add_space(12.0);
-    section(ui, "Intro / outro");
-    let kinds: Vec<_> = Transition::INTRO.iter().map(|t| (*t, t.label())).collect();
-    choice_grid(ui, &mut it.transition, &kinds);
-    ui.add(Slider::new(&mut it.fade_in, 0.0..=2.0).text("in").suffix("s"));
-    ui.add(Slider::new(&mut it.fade_out, 0.0..=2.0).text("out").suffix("s"));
+    section(ui, "Intro");
+    let intros: Vec<_> = Transition::INTRO.iter().map(|t| (*t, t.label())).collect();
+    choice_grid(ui, &mut it.transition, &intros);
+    ui.add(Slider::new(&mut it.fade_in, 0.0..=2.0).text("length").suffix("s"));
+    ui.add_space(12.0);
+    section(ui, "Outro");
+    let outros: Vec<_> = Transition::OUTRO.iter().map(|t| (*t, t.label())).collect();
+    let mut outro = it.outro_effect();
+    if choice_grid(ui, &mut outro, &outros) {
+        it.outro = Some(outro);
+    }
+    ui.add(Slider::new(&mut it.fade_out, 0.0..=2.0).text("length").suffix("s"));
 }
 
 /// One-click voice clean-up and gain for clips that have sound.

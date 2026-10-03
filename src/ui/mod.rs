@@ -161,7 +161,7 @@ pub fn draw(ui: &mut Ui, app: &mut App) {
         .show(ui, |ui| inspector::show(ui, app));
     Panel::left("library")
         .frame(frame())
-        .default_size(280.0)
+        .default_size(340.0)
         .show(ui, |ui| library::show(ui, app));
     stage::show(ui, app);
     drag_and_drop(&ctx, app);

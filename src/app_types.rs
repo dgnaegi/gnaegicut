@@ -42,5 +42,4 @@ pub enum Tab {
     Audio,
     Time,
     Transition,
-    Captions,
 }
