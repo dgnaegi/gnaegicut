@@ -10,6 +10,7 @@ pub enum LibraryTab {
     Files,
     Sounds,
     Text,
+    Stickers,
     Captions,
 }
 
@@ -30,6 +31,8 @@ pub struct SoundsUi {
     pub pending: std::collections::HashMap<String, (usize, f64)>,
     pub playing: Option<String>,
     pub preview: SoundPreview,
+    /// The Stickers tab shares this panel state.
+    pub stickers: crate::stickers::StickersUi,
 }
 
 impl SoundsUi {

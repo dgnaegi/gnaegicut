@@ -22,6 +22,10 @@ pub enum Event {
     /// A sound is downloaded and probed; put it on the timeline.
     SoundItem(String, Box<crate::project::Item>),
     SoundFailed(String, String),
+    /// The list of animated stickers arrived.
+    StickerIndex(Result<Vec<crate::stickers::Sticker>, String>),
+    /// A sticker's preview: code and RGBA pixels with the size.
+    StickerPreview(String, Result<(Vec<u8>, u32, u32), String>),
 }
 
 #[derive(Clone, Copy, PartialEq)]

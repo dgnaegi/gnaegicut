@@ -13,6 +13,7 @@ mod stage_geometry;
 mod stage_guides;
 mod stage_overlay;
 mod stage_scale;
+mod stickers_panel;
 mod text_panel;
 mod text_tab;
 mod timeline;

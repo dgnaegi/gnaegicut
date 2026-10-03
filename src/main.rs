@@ -22,6 +22,8 @@ mod sound_actions;
 mod sound_preview;
 mod sound_state;
 mod sounds;
+mod sticker_actions;
+mod stickers;
 mod text;
 mod text_actions;
 mod text_bar;

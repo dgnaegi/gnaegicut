@@ -42,7 +42,7 @@ impl Project {
         let (earliest, latest) = self.room_around(id);
         let Some(item) = self.get_mut(id) else { return };
         let t = if front { t.max(earliest) } else { t.min(latest) }; // never into a neighbouring clip
-        let limited = matches!(item.kind, Kind::Video | Kind::Audio);
+        let limited = matches!(item.kind, Kind::Video | Kind::Audio) && !item.looped; // a looped clip has no ends to reach
         if front {
             if !limited {
                 return;

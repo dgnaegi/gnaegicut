@@ -1,6 +1,6 @@
 //! The library: every imported file with a thumbnail, how often it is used, and quick actions.
 
-use super::{captions, sounds_panel, text_tab};
+use super::{captions, sounds_panel, stickers_panel, text_tab};
 use crate::app::App;
 use crate::drop::LibraryDrag;
 use crate::patterns;
@@ -26,6 +26,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
         (LibraryTab::Files, "Media"),
         (LibraryTab::Sounds, "Sounds"),
         (LibraryTab::Text, "Text"),
+        (LibraryTab::Stickers, "Stickers"),
         (LibraryTab::Captions, "Captions"),
     ];
     tabs(ui, &mut app.library_tab, &list);
@@ -34,6 +35,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
         LibraryTab::Files => files(ui, app),
         LibraryTab::Sounds => sounds_panel::show(ui, app),
         LibraryTab::Text => text_tab::show(ui, app),
+        LibraryTab::Stickers => stickers_panel::show(ui, app),
         LibraryTab::Captions => {
             ScrollArea::vertical().show(ui, |ui| captions::show(ui, app));
         }

@@ -36,6 +36,9 @@ pub struct Item {
     /// Camera shake, 0 (none) to 1 (violent).
     #[serde(default)]
     pub shake: f32,
+    /// Repeats the clip for as long as the item lasts (an animated sticker).
+    #[serde(default)]
+    pub looped: bool,
     /// Smooths out shaky footage (video only).
     #[serde(default)]
     pub stabilize: bool,
@@ -113,6 +116,7 @@ impl Item {
             amount: 0.3,
             shake: 0.0,
             stabilize: false,
+            looped: false,
             crop: Crop::default(),
             edge: Edge::default(),
             look: Look::None,

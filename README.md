@@ -19,6 +19,7 @@ A video editor for TikTok, Reels and Shorts. Native macOS app, written in Rust. 
 - Captions from local Whisper, burned in
 - Voice clean-up, volume, fades
 - Free sound and music search (Openverse)
+- Animated stickers: the Noto Animated Emoji (CC BY 4.0), searchable, loop for as long as you like
 - Save, open, autosave
 - Preview and export use the same ffmpeg graph, so they match
 

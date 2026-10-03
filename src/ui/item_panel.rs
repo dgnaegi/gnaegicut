@@ -167,7 +167,7 @@ pub fn audio(ui: &mut Ui, app: &mut App, id: u64) {
 pub fn timing(ui: &mut Ui, app: &mut App, id: u64) {
     let Some(it) = app.project.get_mut(id) else { return };
     ui.add(Slider::new(&mut it.at, 0.0..=600.0).text("starts at").suffix("s"));
-    if it.kind == Kind::Video {
+    if it.kind == Kind::Video && !it.looped {
         let src = it.src_len;
         ui.add(
             Slider::new(&mut it.start, 0.0..=(it.end - 0.1).max(0.0))

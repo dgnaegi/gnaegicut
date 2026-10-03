@@ -104,6 +104,7 @@ impl Item {
             || self.spins()
             || self.fade_lens() != (0.0, 0.0)
             || self.reveal().is_some()
+            || self.looped
             || self.edge.feather > 0.0
             || self.edge.border > 0.0
     }

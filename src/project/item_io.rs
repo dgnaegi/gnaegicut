@@ -7,6 +7,13 @@ impl Item {
     /// ffmpeg input options that open exactly the trimmed part of this item.
     pub fn input_args(&self) -> Vec<String> {
         let (len, path) = (format!("{:.3}", self.len()), self.path.clone());
+        if self.looped {
+            // The animation repeats, so where playback joins in is the time into the current turn.
+            let turn = format!("{:.3}", self.start % self.src_len.max(0.1));
+            return ["-stream_loop", "-1", "-ss", &turn, "-t", &len, "-i", &path]
+                .map(String::from)
+                .into();
+        }
         if self.kind.is_still() {
             let looped = ["-loop", "1", "-framerate", "30", "-t"].map(String::from);
             looped.into_iter().chain([len, "-i".into(), path]).collect()
@@ -50,6 +57,7 @@ impl Item {
         h.write_u8(self.look as u8);
         h.write_u8(self.reversed as u8);
         h.write_u8(self.stabilize as u8);
+        h.write_u8(self.looped as u8);
         self.crop.hash_into(h);
         self.edge.hash_into(h);
         if let Some(j) = self.join {

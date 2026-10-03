@@ -108,7 +108,7 @@ impl App {
                 self.sounds.pending.remove(&id);
                 self.status = message;
             }
-            _ => {}
+            other => self.on_sticker_event(other),
         }
     }
 
