@@ -100,6 +100,9 @@ pub fn motion(ui: &mut Ui, app: &mut App, id: u64) {
     section(ui, "Look and shake");
     choice(ui, &mut it.look, &Look::ALL, Look::label);
     percent_slider(ui, &mut it.shake, 0.0..=1.0, "shake");
+    if it.kind == Kind::Video {
+        ui.checkbox(&mut it.stabilize, "Stabilize shaky video");
+    }
     ui.add_space(12.0);
     section(ui, "Intro");
     choice(ui, &mut it.transition, &Transition::INTRO, Transition::label);

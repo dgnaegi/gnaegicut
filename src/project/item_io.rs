@@ -49,6 +49,7 @@ impl Item {
         h.write_u8(self.outro.map_or(u8::MAX, |t| t as u8));
         h.write_u8(self.look as u8);
         h.write_u8(self.reversed as u8);
+        h.write_u8(self.stabilize as u8);
         self.crop.hash_into(h);
         self.edge.hash_into(h);
         if let Some(j) = self.join {

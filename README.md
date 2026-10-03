@@ -9,6 +9,7 @@ A video editor for TikTok, Reels and Shorts. Native macOS app, written in Rust. 
 ## Features
 
 - Videos, images and sounds on any number of tracks, all by drag and drop; screenshots paste straight from the clipboard (Cmd+V or the Paste screenshot button)
+- Stabilize shaky video with one tick
 - Crop any picture or video, fade its edges softly or add a border, and give it its own intro and outro: zoom, spin, wipe, circle, slide, flash
 - 9:16, 4:5 and 16:9
 - Move, scale and rotate on the preview, with alignment lines and safe zones

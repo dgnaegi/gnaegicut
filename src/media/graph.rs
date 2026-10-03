@@ -83,6 +83,9 @@ pub fn build(p: &Project, w: u32, h: u32, streams: Streams) -> Graph {
     }
 }
 
+/// Smooths shaky footage; mirrored edges hide the borders that moving the picture back would open up.
+const STABILIZE: &str = "deshake=rx=32:ry=32:edge=mirror";
+
 fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u32), out: &str) -> String {
     let (bw, bh) = item.pixels(p.aspect, w, h);
     let (rw, rh) = item.rotated((bw, bh));
@@ -97,6 +100,9 @@ fn video_layer(i: usize, layer: usize, item: &Item, p: &Project, (w, h): (u32, u
     pre.push("setpts=PTS-STARTPTS".into());
     if item.reversed && !item.kind.is_still() {
         pre.extend(["reverse", "setpts=PTS-STARTPTS"].map(String::from));
+    }
+    if item.stabilize && item.kind == Kind::Video {
+        pre.push(STABILIZE.into());
     }
     pre.extend(item.crop.filter());
     pre.push(match item.zoom_expr() {

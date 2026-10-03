@@ -36,6 +36,9 @@ pub struct Item {
     /// Camera shake, 0 (none) to 1 (violent).
     #[serde(default)]
     pub shake: f32,
+    /// Smooths out shaky footage (video only).
+    #[serde(default)]
+    pub stabilize: bool,
     /// The part of the picture that is cut away on each side.
     #[serde(default)]
     pub crop: Crop,
@@ -109,6 +112,7 @@ impl Item {
             effect: ZoomEffect::None,
             amount: 0.3,
             shake: 0.0,
+            stabilize: false,
             crop: Crop::default(),
             edge: Edge::default(),
             look: Look::None,

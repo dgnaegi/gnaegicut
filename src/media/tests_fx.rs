@@ -137,3 +137,16 @@ fn a_reversed_clip_still_renders_picture_and_sound() {
     let samples = stream::audio(&p).unwrap();
     assert!(samples.iter().any(|s| s.abs() > 0.05), "areverse keeps the tone");
 }
+
+#[test]
+fn a_stabilized_clip_still_renders() {
+    let mut p = Project::default();
+    let mut clip = super::testutil::video("steady", "red", SIZE, 2, false);
+    clip.stabilize = true;
+    p.add(0, clip);
+    let first = stream::video(&p, SIZE.0, SIZE.1).iter().next().expect("a frame");
+    assert!(
+        near([first[0], first[1], first[2]], RED),
+        "the picture comes through the filter"
+    );
+}
