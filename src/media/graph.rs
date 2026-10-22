@@ -51,7 +51,7 @@ pub fn build(p: &Project, w: u32, h: u32, streams: Streams) -> Graph {
     let top = if captions { "vpre" } else { "vout" };
     if want_v {
         let first = if layers == 0 { top } else { "b0" };
-        parts.push(format!("color=c=black:s={w}x{h}:r={FPS}:d={total:.3}[{first}]"));
+        parts.push(format!("color=c=black:s={w}x{h}:r={FPS}:d={total:.3},{BT709}[{first}]"));
     }
     let mut layer = 0;
     for (i, item) in used.iter().enumerate() {
@@ -82,6 +82,10 @@ pub fn build(p: &Project, w: u32, h: u32, streams: Streams) -> Graph {
         filter: parts.join(";"),
     }
 }
+
+/// Marks the canvas as HD video (BT.709), so everything drawn on it, captions included, keeps its exact colour
+/// in players, which all read HD as BT.709. Untagged, ffmpeg falls back to BT.601 and pinks turn pale.
+const BT709: &str = "setparams=colorspace=bt709:color_primaries=bt709:color_trc=bt709:range=tv";
 
 /// Smooths shaky footage; mirrored edges hide the borders that moving the picture back would open up.
 const STABILIZE: &str = "deshake=rx=32:ry=32:edge=mirror";

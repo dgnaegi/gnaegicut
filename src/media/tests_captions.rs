@@ -63,6 +63,37 @@ fn the_background_stays_untouched_away_from_the_caption() {
     );
 }
 
+#[test]
+fn exported_captions_keep_their_exact_pink_in_a_player() {
+    let out = std::env::temp_dir().join(format!("gc_test_{}_pink.mp4", std::process::id()));
+    super::export::export(&captioned(), &out).unwrap();
+    // Decode as players do: HD video is BT.709. An untagged BT.601 file came back pale (green 0x19 -> 0x34).
+    let raw = super::ffmpeg()
+        .arg("-i")
+        .arg(&out)
+        .args([
+            "-ss",
+            "1",
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=in_color_matrix=bt709,format=rgb24",
+        ])
+        .args(["-f", "rawvideo", "-"])
+        .output()
+        .unwrap()
+        .stdout;
+    let mut greens: Vec<u8> = raw
+        .chunks(3)
+        .filter(|c| c[0] > 230 && c[1] < 90 && (90..150).contains(&c[2]))
+        .map(|c| c[1])
+        .collect();
+    assert!(greens.len() > 80, "pink text expected, found {} pixels", greens.len());
+    greens.sort();
+    let typical = greens[greens.len() / 4]; // the letters' cores, away from their soft edges
+    assert!(typical <= 0x22, "#FF1975 has green 0x19, the export shows {typical:#x}");
+}
+
 /// The smallest rectangle (as fractions of the frame) holding every pink caption pixel.
 fn text_bounds(px: &[u8], (w, h): (u32, u32)) -> Option<[f32; 4]> {
     let mut b = [f32::MAX, f32::MAX, f32::MIN, f32::MIN];

@@ -19,7 +19,8 @@ fn stamp(t: f64) -> String {
     )
 }
 
-/// ASS script for a frame of `w`x`h` pixels. `layout.x/y` place the caption's centre.
+/// ASS script for a frame of `w`x`h` pixels. `YCbCr Matrix: None` keeps the colours exact; without it libass
+/// assumes the legacy TV.601 matrix and shifts them. `layout.x/y` place the caption's centre.
 pub fn render(
     captions: &[Caption],
     style: CaptionStyle,
@@ -47,7 +48,7 @@ pub fn render(
     let (cx, cy) = layout.position(aspect);
     let (x, y) = ((cx * w as f32).round() as i32, (cy * h as f32).round() as i32);
     let mut s = format!(
-        "[Script Info]\nScriptType: v4.00+\nPlayResX: {w}\nPlayResY: {h}\n\n[V4+ Styles]\n\
+        "[Script Info]\nScriptType: v4.00+\nPlayResX: {w}\nPlayResY: {h}\nYCbCr Matrix: None\n\n[V4+ Styles]\n\
          Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, \
          Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, \
          MarginR, MarginV, Encoding\n\
@@ -119,7 +120,7 @@ mod tests {
         let out = render(&c, CaptionStyle::Block, &layout, Aspect::Vertical, (1080, 1920));
         assert!(out.contains("Dialogue: 0,0:00:01.00,0:00:02.50,Default,,0,0,0,,{\\pos(540,1440)}HELLO X"));
         assert!(out.contains("Style: Default,Helvetica,77,"));
-        assert!(out.contains("PlayResY: 1920"));
+        assert!(out.contains("PlayResY: 1920\nYCbCr Matrix: None\n"));
     }
 
     #[test]

@@ -12,6 +12,16 @@ pub fn export(p: &Project, out_path: &Path) -> Result<(), String> {
         .args([
             "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
         ])
+        .args([
+            "-colorspace",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            "-color_trc",
+            "bt709",
+            "-color_range",
+            "tv",
+        ])
         .args(["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"])
         .arg(out_path);
     run(&mut cmd)
