@@ -1,5 +1,6 @@
 #!/bin/sh
-# Builds target/GnaegiCut.app and target/GnaegiCut.dmg. Needs: cargo, models/ggml-base.bin (sh scripts/get-model.sh).
+# Builds target/GnaegiCut.app and target/GnaegiCut.dmg, with ffmpeg and whisper inside so it runs without Homebrew.
+# Needs: cargo, brew install ffmpeg-full whisper-cpp, models/ggml-base.bin (sh scripts/get-model.sh).
 set -e
 cd "$(dirname "$0")/.."
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
@@ -10,6 +11,7 @@ rm -rf "$APP" && mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/models"
 cp target/release/gnaegicut "$APP/Contents/MacOS/gnaegicut"
 cp -R assets "$APP/Contents/Resources/assets"
 cp models/ggml-base.bin "$APP/Contents/Resources/models/"
+bash scripts/bundle-tools.sh "$APP"
 mkdir -p target/icon.iconset
 for s in 16 32 128 256 512; do
   sips -z $s $s assets/icon.png --out target/icon.iconset/icon_${s}x${s}.png >/dev/null

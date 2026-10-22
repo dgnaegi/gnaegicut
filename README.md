@@ -25,7 +25,9 @@ A video editor for TikTok, Reels and Shorts. Native macOS app, written in Rust. 
 
 ## Run
 
-macOS only.
+macOS only. The GnaegiCut.dmg from Releases runs as is: it carries its own ffmpeg (GPL, built by Homebrew's ffmpeg-full) and whisper.cpp, so no Homebrew is needed. `sh scripts/bundle.sh` builds it.
+
+From source:
 
 ```sh
 sh scripts/setup.sh                                  # Rust, ffmpeg-full, whisper.cpp, caption model

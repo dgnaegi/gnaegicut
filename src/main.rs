@@ -37,11 +37,7 @@ mod widgets_input;
 use eframe::egui;
 
 fn main() -> eframe::Result {
-    // GUI apps launched from Finder don't inherit the shell PATH, so make sure ffmpeg is findable.
-    let path = std::env::var("PATH").unwrap_or_default();
-    let tools = "/opt/homebrew/opt/ffmpeg-full/bin:/opt/homebrew/bin:/usr/local/bin";
-    // SAFETY: called once at startup, before any other thread exists.
-    unsafe { std::env::set_var("PATH", format!("{tools}:{path}")) };
+    media::find_tools();
 
     let viewport = egui::ViewportBuilder::default()
         .with_title("GnaegiCut")
